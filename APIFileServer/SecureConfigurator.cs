@@ -1,4 +1,4 @@
-﻿namespace JWTAuthentication
+﻿namespace APIFileServer
 {
     public class SecureConfigurator
     {

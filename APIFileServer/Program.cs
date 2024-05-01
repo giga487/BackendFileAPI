@@ -15,6 +15,7 @@ namespace APIFileServer
         public int HTTPSPort { get; private set; } = 5001;
         public int RestTImeOutMS { get; private set; } = 10000;
         public string SharedFilePath { get; private set; } = string.Empty;
+        public string ServerWebPath { get; private set; } = string.Empty;
         public bool OpenFileProvider { get; private set; } = false;
         public string Host { get; private set; } = string.Empty;
         public RestAPIConfiguration(ConfigurationManager config)
@@ -34,6 +35,8 @@ namespace APIFileServer
             {
                 Host = "Localhost";
             }
+
+            ServerWebPath = sharedFileConf.GetValue<string>("ServerFilesPath") ?? string.Empty;
         }
     }
 
@@ -86,7 +89,7 @@ namespace APIFileServer
                 app.UseDirectoryBrowser(new DirectoryBrowserOptions
                 {
                     FileProvider = physicalProvider,
-                    RequestPath = restConf.SharedFilePath
+                    RequestPath = restConf.ServerWebPath
                 });
             }
 
