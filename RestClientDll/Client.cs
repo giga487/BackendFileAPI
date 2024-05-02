@@ -37,14 +37,8 @@ namespace RestClientDll
         public async Task<T> CreateRequest<T>(RestRequestType type, string controller, string action, string ids = "")
         {
             string requestString = $"{controller}/{action}/{ids}";
-            var request = new RestRequest(requestString);
 
-            if (type == RestRequestType.Get)
-            {
-                return await _client.GetAsync<T>(request, _tokenSc.Token);
-            }
-
-            return await Task.FromResult(default(T));
+            return await CreateRequest<T>(type, requestString);
         }
 
         public async Task<T> CreateRequest<T>(RestRequestType type, string stringRequest)
@@ -62,9 +56,8 @@ namespace RestClientDll
         public async Task<byte[]> DownloadRequest(string controller, string action, string ids = "")
         {
             string requestString = $"{controller}/{action}/{ids}";
-            var request = new RestRequest(requestString);
 
-            return await _client.DownloadDataAsync(request, _tokenSc.Token);
+            return await DownloadRequest(requestString);
         }
 
         public async Task<byte[]> DownloadRequest(string requestString)
