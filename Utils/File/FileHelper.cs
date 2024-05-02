@@ -1,6 +1,9 @@
-﻿using System.Security.Cryptography;
+﻿using System;
+using System.IO;
+using System.Security.Cryptography;
+using System.Threading.Tasks;
 
-namespace APIFileServer.source.Utils
+namespace Utils.FileHelper
 {
     public class FileHelper
     {

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.FileProviders;
 using System;
 using System.Net.Mime;
+using Utils.FileHelper;
 
 namespace APIFileServer.Controllers
 {
@@ -83,7 +84,7 @@ namespace APIFileServer.Controllers
                 if(file is null || file.FileInfo is null)
                     return new BadRequestResult();
 
-                // create a memorystream
+                // create a memory stream
                 var memoryStream = new MemoryStream();
 
                 using (var stream = new FileStream(file.FileInfo.FullName, FileMode.Open))

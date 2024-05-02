@@ -1,11 +1,15 @@
-﻿namespace APIFileServer.source.Utils
+﻿using System.Collections.Generic;
+using System.IO;
+using System.Threading.Tasks;
+
+namespace Utils.FileHelper
 {
     public class FileInfoToShare
     {
         public string Filename { get; set; } = string.Empty;
         public string MD5 { get; set; } = string.Empty;
         public long Dim { get; set; } = 0;
-        public FileInfo? FileInfo { get; private set; } = null;
+        public FileInfo FileInfo { get; private set; } = null;
 
         public FileInfoToShare(string filename, string mainFolder)
         {
