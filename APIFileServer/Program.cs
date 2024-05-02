@@ -20,7 +20,7 @@ namespace APIFileServer
         public RestAPIConfiguration(ConfigurationManager config)
         {
             var sharedFileConf = config.GetSection("SharedFile");
-            SharedFilePath = sharedFileConf.GetValue<string>("ClientFiles") ?? string.Empty;
+            SharedFilePath = sharedFileConf.GetValue<string>("ClientFilesPath") ?? string.Empty;
 
             if (SharedFilePath == string.Empty)
             {
@@ -39,7 +39,7 @@ namespace APIFileServer
 
     public class Program
     {
-        public static SecureConfigurator Secure { get; private set; } = null;
+        public static SecureConfigurator? Secure { get; private set; } = null;
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
@@ -49,6 +49,11 @@ namespace APIFileServer
 
             RestAPIConfiguration restConf = new RestAPIConfiguration(builder.Configuration);
             Secure = new SecureConfigurator();
+
+            if(!Directory.Exists(restConf.SharedFilePath))
+            {
+                throw new FileNotFoundException(restConf.SharedFilePath);
+            }
 
             var physicalProvider = new PhysicalFileProvider(restConf.SharedFilePath);
             builder.Services.AddSingleton<IFileProvider>(physicalProvider);
@@ -78,8 +83,6 @@ namespace APIFileServer
 
             app.Urls.Add(hostUri.AbsoluteUri);
             app.Urls.Add(hostUriHttps.AbsoluteUri);
-            //app.Urls.Add(hostUri.AbsoluteUri);
-            //app.Urls.Add(hostUriHttps.AbsoluteUri);
 
             if (restConf.OpenFileProvider)
             {
