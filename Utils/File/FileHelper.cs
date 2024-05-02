@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.IO.Pipes;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 
@@ -31,6 +32,51 @@ namespace Utils.FileHelper
 
             return md5Result;
         }
+
+        public async static Task MakeFile(byte[] bytes, string path, string filename, bool overwrite)
+        {
+            string fileName = Path.Combine(path, filename);
+
+            if (overwrite && File.Exists(filename))
+            {
+                return;
+            }
+
+            await Task.Run(() =>
+            {
+                File.WriteAllBytes(fileName, bytes);
+            });
+        }
+
+        public async static Task MakeFile(Stream fileStream, string path, string filename, bool overwrite)
+        {
+            string fileName = Path.Combine(path, filename);
+            
+            if(overwrite && File.Exists(filename))
+            {
+                return;
+            }
+
+            await Task.Run(() =>
+            {
+                using (FileStream writeStream = new FileStream(fileName, FileMode.Create, FileAccess.Write))
+                {
+                    int length = (int)fileStream.Length;
+                    Byte[] buffer = new Byte[length];
+                    int bytesRead = fileStream.Read(buffer, 0, length);
+
+                    while (bytesRead > 0)
+                    {
+                        writeStream.Write(buffer, 0, bytesRead);
+                        bytesRead = fileStream.Read(buffer, 0, length);
+                    }
+
+                    fileStream.Close();
+                    writeStream.Close();
+                }
+            });
+        }
+
 
         public async static Task<string> Md5ResultAsync(string fileName, string filePath)
         {

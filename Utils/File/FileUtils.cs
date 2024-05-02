@@ -35,9 +35,33 @@ namespace Utils.FileHelper
         }
     }
 
+    public class ApiFileInfo
+    {
+        public string Filename { get; set; } = string.Empty;
+        public string MD5 { get; set; } = string.Empty;
+        public long Dim { get; set; } = 0;
+
+        public ApiFileInfo() { }
+        public ApiFileInfo(FileInfoToShare f)
+        {
+            Filename = f.Filename;
+            MD5 = f.MD5;
+            Dim = f.Dim;
+        }
+
+        public ApiFileInfo(string filename, string mD5, long dim)
+        {
+            Filename = filename;
+            MD5 = mD5;
+            Dim = dim;
+        }
+    }
+
     public class FileList
     {
         public Dictionary<string, FileInfoToShare> FilesDict = new Dictionary<string, FileInfoToShare>();
+        public Dictionary<string, ApiFileInfo> MinimalApiDict = new Dictionary<string, ApiFileInfo>();
+
         public string Folder = string.Empty;
         private string[] Files = null;
         public long TotalFileSize { get; private set; } = 0;
@@ -83,6 +107,12 @@ namespace Utils.FileHelper
             if (!FilesDict.ContainsKey(name) && f != null)
             {
                 FilesDict[name] = f;
+                TotalFileSize += f.Dim;
+            }
+
+            if (!MinimalApiDict.ContainsKey(name) && f != null)
+            {
+                MinimalApiDict[name] = new ApiFileInfo(f);
                 TotalFileSize += f.Dim;
             }
         }

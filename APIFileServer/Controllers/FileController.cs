@@ -25,7 +25,7 @@ namespace APIFileServer.Controllers
         {
             if (_fileProvider is PhysicalFileProvider physicalFileProvider)
             {
-                var list = _files?.FilesDict.Values.ToList();
+                var list = _files?.MinimalApiDict.Values.ToList();
 
                 if (list?.Count == 0)
                 {

@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace RestFW48ClientTest.Properties
+namespace WpfClientRest.Properties
 {
 
 
