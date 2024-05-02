@@ -2,13 +2,14 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Utils.JWTAuthentication;
 
 namespace JWTAuthentication
 {
     public class JwtUtils
     {
-        SecureConfigurator _config;
-        public JwtUtils(SecureConfigurator config) 
+        JWTSecureConfiguration _config;
+        public JwtUtils(JWTSecureConfiguration config) 
         {
             _config = config;
         }

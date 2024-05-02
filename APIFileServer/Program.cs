@@ -6,12 +6,13 @@ using JWTAuthentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Utils.JWTAuthentication;
 
 namespace APIFileServer
 {
     public class Program
     {
-        public static SecureConfigurator? Secure { get; private set; } = null;
+        public static JWTSecureConfiguration? Secure { get; private set; } = null;
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
@@ -23,9 +24,9 @@ namespace APIFileServer
 
             Console.WriteLine($"Size list {restConf.FileList.TotalFileSize} bytes");
 
-            Secure = new SecureConfigurator();
+            Secure = restConf.JWTConfig ?? new JWTSecureConfiguration();
 
-            if(!Directory.Exists(restConf.SharedFilePath))
+            if (!Directory.Exists(restConf.SharedFilePath))
             {
                 throw new FileNotFoundException(restConf.SharedFilePath);
             }

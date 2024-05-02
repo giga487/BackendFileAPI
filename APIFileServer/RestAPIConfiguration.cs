@@ -1,4 +1,6 @@
-﻿using Utils.FileHelper;
+﻿using JWTAuthentication;
+using Utils.FileHelper;
+using Utils.JWTAuthentication;
 
 namespace APIFileServer
 {
@@ -13,6 +15,8 @@ namespace APIFileServer
         public string UrlFileProvider { get; private set; } = string.Empty;
         public List<string> SharedFiles { get; private set; } = new List<string>();
         public FileList? FileList { get; private set; } = null;
+        public JWTSecureConfiguration? JWTConfig {get; private set;} = null;
+
         public RestAPIConfiguration(ConfigurationManager config)
         {
             var sharedFileConf = config.GetSection("SharedFile");
@@ -42,6 +46,18 @@ namespace APIFileServer
             {
                 throw new ArgumentException($"No file path name in configuration: \'URLFileProvider\'");
             }
+
+            var jwtConfig = config.GetSection("JWTSecureData");
+
+            if (jwtConfig is null)
+                throw new ArgumentException(message: "No jwt token secure data");
+
+            JWTConfig = new JWTSecureConfiguration();
+
+            JWTConfig.MyKey = jwtConfig.GetValue<string>("MyKey") ?? string.Empty;
+            JWTConfig.Issuer = jwtConfig.GetValue<string>("Issuer") ?? string.Empty;
+            JWTConfig.Audience = jwtConfig.GetValue<string>("Audience") ?? string.Empty;
+            JWTConfig.Subject = jwtConfig.GetValue<string>("Subject") ?? string.Empty;
         }
 
         public async Task<RestAPIConfiguration> CreateFileListAsync()
