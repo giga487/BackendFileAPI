@@ -90,6 +90,7 @@ namespace APIFileServer.Controllers
                 {
                     await stream.CopyToAsync(memoryStream);
                 }
+
                 if (new FileExtensionContentTypeProvider().TryGetContentType(fileName, out string contentType))
                 {
                     // set the position to return the file from

@@ -78,7 +78,7 @@ namespace WpfClientRest
 
         private void createFileBtn_Click(object sender, RoutedEventArgs e)
         {
-            FileHelper.MakeTestFile(1024 * 1024 * 1024, "");
+            FileHelper.MakeTestFile(1024 * 1024 * 1024, Directory.GetCurrentDirectory());
         }
     }
 }
