@@ -1,23 +1,23 @@
 ﻿using System.Security.Cryptography;
 
-namespace APIFileServer.source
+namespace APIFileServer.source.Utils
 {
     public class FileHelper
     {
-        public async static Task<string> Md5Result(string fileName)
+        public async static Task<string> Md5ResultAsync(string fileName)
         {
             string md5Result = string.Empty;
 
-            if (!System.IO.File.Exists(fileName))
+            if (!File.Exists(fileName))
             {
                 return md5Result;
             }
 
             using (var md5 = MD5.Create())
             {
-                using (var stream = System.IO.File.OpenRead(fileName))
+                using (var stream = File.OpenRead(fileName))
                 {
-                    md5Result = await Task<string>.Run(() =>
+                    md5Result = await Task.Run(() =>
                     {
                         var hash = md5.ComputeHash(stream);
                         return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
@@ -29,11 +29,30 @@ namespace APIFileServer.source
             return md5Result;
         }
 
-        public async static Task<string> Md5Result(string fileName, string filePath)
+        public async static Task<string> Md5ResultAsync(string fileName, string filePath)
         {
             string file = Path.Combine(filePath, fileName);
 
-            return await Md5Result(file);
+            return await Md5ResultAsync(file);
+        }
+
+        public static string Md5Result(string file)
+        {
+            string md5Result = string.Empty;
+
+            if (!File.Exists(file))
+            {
+                return md5Result;
+            }
+
+            using (var md5 = MD5.Create())
+            {
+                using (var stream = File.OpenRead(file))
+                {
+                    var hash = md5.ComputeHash(stream);
+                    return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
+                }
+            }
         }
 
         public static string RelativePath(string filename, string parentPathToExtract)

@@ -9,34 +9,6 @@ using System.Text;
 
 namespace APIFileServer
 {
-    public class RestAPIConfiguration
-    {
-        public int HTTPPort { get; private set; } = 5000;
-        public int HTTPSPort { get; private set; } = 5001;
-        public int RestTImeOutMS { get; private set; } = 10000;
-        public string SharedFilePath { get; private set; } = string.Empty;
-        public bool OpenFileProvider { get; private set; } = false;
-        public string Host { get; private set; } = string.Empty;
-        public RestAPIConfiguration(ConfigurationManager config)
-        {
-            var sharedFileConf = config.GetSection("SharedFile");
-            SharedFilePath = sharedFileConf.GetValue<string>("ClientFilesPath") ?? string.Empty;
-
-            if (SharedFilePath == string.Empty)
-            {
-                throw new ArgumentException("No file path to share");
-            }
-
-            OpenFileProvider = sharedFileConf.GetValue<bool>("OpenFileProvider");
-            Host = sharedFileConf.GetValue<string>("Host") ?? string.Empty;
-
-            if (Host == string.Empty)
-            {
-                Host = "Localhost";
-            }
-        }
-    }
-
     public class Program
     {
         public static SecureConfigurator? Secure { get; private set; } = null;
@@ -45,9 +17,12 @@ namespace APIFileServer
             var builder = WebApplication.CreateBuilder(args);
 
             // Add services to the container.
-            builder.Services.AddControllersWithViews();
+            //builder.Services.AddControllersWithViews();
 
-            RestAPIConfiguration restConf = new RestAPIConfiguration(builder.Configuration);
+            RestAPIConfiguration restConf = new RestAPIConfiguration(builder.Configuration).CreateFileList();
+
+            Console.WriteLine($"Size list {restConf.FileList.TotalFileSize} bytes");
+
             Secure = new SecureConfigurator();
 
             if(!Directory.Exists(restConf.SharedFilePath))
@@ -58,12 +33,12 @@ namespace APIFileServer
             var physicalProvider = new PhysicalFileProvider(restConf.SharedFilePath);
             builder.Services.AddSingleton<IFileProvider>(physicalProvider);
 
+            if(restConf.FileList is not null)
+                builder.Services.AddSingleton(restConf.FileList);
+
             builder.Services.AddSingleton(Secure);
             builder.Services.AddScoped<JwtUtils, JwtUtils>();
             builder.Services.AddDirectoryBrowser();
-
-            Uri hostUri = new UriBuilder("http", restConf.Host, restConf.HTTPPort).Uri;
-            Uri hostUriHttps = new UriBuilder("https", restConf.Host, restConf.HTTPSPort).Uri;
 
             builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
             {
@@ -79,20 +54,6 @@ namespace APIFileServer
                 };
             });
 
-            var app = builder.Build();
-
-            app.Urls.Add(hostUri.AbsoluteUri);
-            app.Urls.Add(hostUriHttps.AbsoluteUri);
-
-            if (restConf.OpenFileProvider)
-            {
-                app.UseDirectoryBrowser(new DirectoryBrowserOptions
-                {
-                    FileProvider = physicalProvider,
-                    RequestPath = restConf.SharedFilePath
-                });
-            }
-
             // Add services to the container.
 
             builder.Services.AddControllers();
@@ -100,19 +61,52 @@ namespace APIFileServer
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
+            var app = builder.Build();
+
+            if (restConf.OpenFileProvider)
+            {
+                app.UseDirectoryBrowser(new DirectoryBrowserOptions
+                {
+                    FileProvider = physicalProvider,
+                    RequestPath = restConf.UrlFileProvider
+                });
+            }
+
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
+            else //utilizzo le configurazioni del profilo 
+            {
+                Uri hostUri = new UriBuilder("http", restConf.Host, restConf.HTTPPort).Uri;
+                Uri hostUriHttps = new UriBuilder("https", restConf.Host, restConf.HTTPSPort).Uri;
+
+
+                app.Urls.Add(hostUri.AbsoluteUri);
+                app.Urls.Add(hostUriHttps.AbsoluteUri);
+            }
 
             app.UseHttpsRedirection();
             app.UseAuthorization();
 
+            //app.MapControllers();
+            //app.MapControllerRoute(
+            //    name: "FileApi",
+            //    pattern: "api/FileApi/{action=Index}/{id?}",
+            //    defaults: new { controller = "File", action = "Index" });
+
+            //app.MapControllerRoute(
+            //    name: "default", //Route Name
+            //    pattern: "{controller=Home}/{action=Index}/{id}" //Route Pattern
+            //);
+            //app.MapControllerRoute(
+            //    name: "File",
+            //    pattern: "File/{}",
+            //    defaults: new { controller = "File", action = "Index" });
 
             app.MapControllers();
-
             app.Run();
         }
     }
