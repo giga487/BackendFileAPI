@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using APIFileServer.source;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.FileProviders;
 using System;
@@ -12,11 +13,13 @@ namespace APIFileServer.Controllers
     {
         private IFileProvider? _fileProvider { get; set; } = null;
         private FileList? _files { get; set; } = null;
+        private RestAPIFileCache _memoryCache { get; set; } = null;
 
-        public FileController(IFileProvider? fileProvider, FileList list)
+        public FileController(IFileProvider? fileProvider, FileList list, RestAPIFileCache cache)
         {
             _fileProvider = fileProvider;
             _files = list;
+            _memoryCache = cache;
         }
 
         //https://localhost:7006/api/File/List
@@ -88,19 +91,29 @@ namespace APIFileServer.Controllers
                 {
                     ApiFileInfo objToSend = file.Chunks.ChunksList.ElementAt(id);
 
-                    if(objToSend != null)
-                    {
-                        // create a memory stream
-                        var memoryStream = new MemoryStream();
-                        using (var stream = new FileStream(objToSend.Filename, FileMode.Open))
-                        {
-                            await stream.CopyToAsync(memoryStream);
+                    MemoryStream memoryStream = null;
 
+                    if (objToSend != null)
+                    {
+                        if (!_memoryCache.Get(objToSend.Filename, out byte[] memoryBuffer))
+                        {
+                            using (var stream = new FileStream(objToSend.Filename, FileMode.Open))
+                            {
+                                stream.CopyTo(memoryStream);
+                                _memoryCache.AddMemory(objToSend.Filename, memoryStream);
+                            }
+                        }
+                        else
+                        {
+                            memoryStream = new MemoryStream(memoryBuffer);
+                        }
+
+                        using(memoryStream)
+                        {
                             if (memoryStream.Length == 0)
                             {
                                 Console.WriteLine($"Request of {objToSend.Filename} -> failed");
                             }
-
                             if (new FileExtensionContentTypeProvider().TryGetContentType(objToSend.Filename, out string contentType))
                             {
                                 // set the position to return the file from
@@ -123,11 +136,13 @@ namespace APIFileServer.Controllers
 
                             }
                         }
-                        
+
+
+
                         return new BadRequestResult();
                     }
                 }
-                catch
+                catch(Exception ex)
                 {
                     return new BadRequestResult();
                 }

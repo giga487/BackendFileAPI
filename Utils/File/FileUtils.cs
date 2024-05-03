@@ -22,7 +22,7 @@ namespace Utils.FileHelper
 
         }
 
-        public FileInfoToShare MakeChunks(string chunkFolder, int maxSize)
+        public FileInfoToShare MakeChunksFiles(string chunkFolder, int maxSize)
         {
             //Task.Run(() =>
             //{
@@ -116,11 +116,11 @@ namespace Utils.FileHelper
             return this;
         }
 
-        public FileList MakeChunks(string chunkFolder, int maxSize)
+        public FileList MakeChunksFiles(string chunkFolder, int maxSize)
         {
             foreach (var f in FilesDict)
             {
-                f.Value?.MakeChunks(chunkFolder, maxSize);
+                f.Value?.MakeChunksFiles(chunkFolder, maxSize);
 
                 if (MinimalApiDict.TryGetValue(f.Key, out ApiFileInfo value)) //Aggiorno i minimal api 
                 {

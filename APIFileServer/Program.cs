@@ -9,12 +9,14 @@ using System.Text;
 using Utils.JWTAuthentication;
 using Utils.FileHelper;
 using System.Diagnostics;
+using APIFileServer.source;
 
 namespace APIFileServer
 {
     public class Program
     {
         public static JWTSecureConfiguration? Secure { get; private set; } = null;
+
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
@@ -35,12 +37,15 @@ namespace APIFileServer
                 throw new FileNotFoundException(restConf.SharedFilePath);
             }
 
+            RestAPIFileCache RestCache = new RestAPIFileCache(1024*1024*100);
+
             var physicalProvider = new PhysicalFileProvider(restConf.SharedFilePath);
             builder.Services.AddSingleton<IFileProvider>(physicalProvider);
 
             if(restConf.FileList is not null)
                 builder.Services.AddSingleton(restConf.FileList);
 
+            builder.Services.AddSingleton(RestCache);
             builder.Services.AddSingleton(Secure);
             builder.Services.AddScoped<JwtUtils, JwtUtils>();
             builder.Services.AddDirectoryBrowser();

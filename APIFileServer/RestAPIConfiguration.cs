@@ -92,7 +92,7 @@ namespace APIFileServer
         {
             //Task.Run(() =>
             //{
-                FileList?.MakeChunks(ChunksMainFolder, MaxChunkSize);
+            FileList?.MakeChunksFiles(ChunksMainFolder, MaxChunkSize);
             //});
 
             return this;
