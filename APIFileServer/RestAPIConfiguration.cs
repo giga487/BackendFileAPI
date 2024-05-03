@@ -51,9 +51,13 @@ namespace APIFileServer
 
             ChunksMainFolder = sharedFileConf.GetValue<string>("ChunksMainFolder") ?? string.Empty;
 
-            if(ChunksMainFolder == string.Empty)
+            if (ChunksMainFolder == string.Empty)
             {
                 ChunksIsOK = false;
+
+            }
+            else
+            {
                 MaxChunkSize = sharedFileConf.GetValue<int>("MaxChunkSize");
             }
 

@@ -95,28 +95,33 @@ namespace APIFileServer.Controllers
                         using (var stream = new FileStream(objToSend.Filename, FileMode.Open))
                         {
                             await stream.CopyToAsync(memoryStream);
-                        }
 
-                        if (new FileExtensionContentTypeProvider().TryGetContentType(objToSend.Filename, out string contentType))
-                        {
-                            // set the position to return the file from
-                            memoryStream.Position = 0;
-
-                            return new FileStreamResult(memoryStream, contentType)
+                            if (memoryStream.Length == 0)
                             {
-                                FileDownloadName = fileName
-                            };
-                        }
-                        else
-                        {
-                            memoryStream.Position = 0;
+                                Console.WriteLine($"Request of {objToSend.Filename} -> failed");
+                            }
 
-                            Console.WriteLine($"Request of {objToSend.Filename}");
-                            return new FileStreamResult(memoryStream, "application/octet-stream")
+                            if (new FileExtensionContentTypeProvider().TryGetContentType(objToSend.Filename, out string contentType))
                             {
-                                FileDownloadName = fileName
-                            };
+                                // set the position to return the file from
+                                memoryStream.Position = 0;
 
+                                return new FileStreamResult(memoryStream, contentType)
+                                {
+                                    FileDownloadName = fileName
+                                };
+                            }
+                            else
+                            {
+                                memoryStream.Position = 0;
+
+                                //Console.WriteLine($"Request of {objToSend.Filename}");
+                                return new FileStreamResult(memoryStream, "application/octet-stream")
+                                {
+                                    FileDownloadName = fileName
+                                };
+
+                            }
                         }
                         
                         return new BadRequestResult();

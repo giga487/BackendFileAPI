@@ -47,6 +47,11 @@ namespace Utils.FileHelper
                 Directory.CreateDirectory(path);
             }
 
+            if (bytes is null)
+            {
+                return;
+            }
+
             await Task.Run(() =>
             {
                 File.WriteAllBytes(fileName, bytes);

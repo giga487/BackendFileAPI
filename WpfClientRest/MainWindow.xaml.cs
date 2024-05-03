@@ -88,13 +88,13 @@ namespace WpfClientRest
         {
             string fileNameSelected = (string)fileCombobox.SelectedItem;
 
-            string requestString = $"/api/File/DownloadFileByChunks?fileName={fileNameSelected}&Id={chunkFileCombobox.SelectedItem}";
+            string requestString = $"/api/File/DownloadFileByChunks?fileName={fileNameSelected}&Id={itembox.SelectedItem}";
             byte[] file = await client.DownloadRequest(requestString);
             string md5 = FileHelper.Md5Result(file);
 
             FileInfo f = new FileInfo(fileNameSelected);
 
-            string filename = $"{f.Name.Replace(f.Extension, "")}_{chunkFileCombobox.SelectedItem}{f.Extension}"; 
+            string filename = $"{f.Name.Replace(f.Extension, "")}_{itembox.SelectedItem}{f.Extension}"; 
             resultTxtBox.Text += $"{fileNameSelected}" + Environment.NewLine;
 
             await FileHelper.MakeFile(file, "Test", filename, true);
@@ -118,13 +118,13 @@ namespace WpfClientRest
 
         private void fileCombobox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            chunkFileCombobox.Items.Clear();
+            itembox.Items.Clear();
 
             var apiFileInfo = Dict[(string)fileCombobox.SelectedItem];
 
             for (int i = 0; i < apiFileInfo.ChunksNumber; i++) 
             {
-                chunkFileCombobox.Items.Add(i);
+                itembox.Items.Add(i);
             }
         }
 
@@ -157,6 +157,72 @@ namespace WpfClientRest
 
             st.Stop();
             resultTxtBox.Text += $"Downloaded: {fileNameSelected} in {st.ElapsedMilliseconds}ms" + Environment.NewLine;
+        }
+
+        private void DownloadStressTestBtn_Click(object sender, RoutedEventArgs e)
+        {
+            if(!int.TryParse(howMuchStressTxtbox.Text, out int howMuchResult))
+            {
+                howMuchResult = 5;
+            }
+
+            for (int index = 0; index < howMuchResult; index++)
+            {
+                Uri createdUri = null;
+                string fileNameSelected = "";
+                RestClientDll.RestClient localClient = null;
+                string pathName = $"Test_{index}";
+
+                Dispatcher.Invoke(() =>
+                {
+                    if (int.TryParse(portTxt.Text, out int port))
+                    {
+                        createdUri = new UriBuilder(schemeCombobox.Text, hostTxt.Text, port).Uri;
+                        localClient = new RestClientDll.RestClient(createdUri);
+
+                        uriTxt.Text = createdUri.AbsoluteUri;
+                    }
+                    fileNameSelected = (string)fileCombobox.SelectedItem;
+                });
+
+                Directory.CreateDirectory(pathName);
+
+                Task.Run(async () =>
+                {
+                    var result = await localClient.CreateRequest<List<ApiFileInfo>>(RestClientDll.RestRequestType.Get, "api/File", "List");
+
+                    var apiFileInfo = Dict[fileNameSelected];
+
+                    double percentage = 0;
+                    for (int t = 0; t < apiFileInfo.ChunksNumber; t++)
+                    {
+                        percentage = (double)t / apiFileInfo.ChunksNumber * 100;
+                        //Task.Run(async () =>
+                        //{
+                        string requestString = $"/api/File/DownloadFileByChunks?fileName={fileNameSelected}&Id={t}";
+                        byte[] file = await localClient.DownloadRequest(requestString);
+
+                        FileInfo f = new FileInfo(fileNameSelected);
+                        string filename = $"{f.Name.Replace(f.Extension, "")}_{t}{f.Extension}";
+
+                        if (file is null)
+                        {
+                            Dispatcher.Invoke(() =>
+                            {
+                                resultTxtBox.Text += $"Fail to download {filename} for {pathName} test" + Environment.NewLine;
+                            });
+                            continue;
+                        }
+
+                        await FileHelper.MakeFile(file, pathName, filename, true);
+                        //resultTxtBox.Text += $"Downloaded: {percentage.ToString("F4")}%" + Environment.NewLine;
+                        //});
+                        await Task.Delay(200);
+                    }
+                });
+
+                Task.Delay(500);
+            }
         }
     }
 }

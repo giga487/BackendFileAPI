@@ -19,9 +19,10 @@ namespace RestClientDll
     {
         RestSharp.RestClient _client { get; set; } = null;
         CancellationTokenSource _tokenSc { get; set; } = new CancellationTokenSource();
+        public int MaxTimeout { get; set; } = 10000;
         public RestClient(Uri host, int maxTimeout = 100000)
         {
-
+            MaxTimeout = maxTimeout;
             var options = new RestClientOptions(host)
             {
                 ThrowOnAnyError = true,
@@ -30,7 +31,6 @@ namespace RestClientDll
             };
 
             _client = new RestSharp.RestClient(options);
-
 
         }
 
@@ -44,6 +44,7 @@ namespace RestClientDll
         public async Task<T> CreateRequest<T>(RestRequestType type, string stringRequest)
         {
             var request = new RestRequest(stringRequest);
+            request.Timeout = MaxTimeout;
 
             if (type == RestRequestType.Get)
             {
@@ -63,6 +64,7 @@ namespace RestClientDll
         public async Task<byte[]> DownloadRequest(string requestString)
         {
             var request = new RestRequest(requestString);
+            request.Timeout = MaxTimeout;
 
             try
             {
