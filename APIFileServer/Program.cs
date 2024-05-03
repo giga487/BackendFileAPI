@@ -6,62 +6,49 @@ using JWTAuthentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Utils.JWTAuthentication;
+using Utils.FileHelper;
+using System.Diagnostics;
+using APIFileServer.source;
 
 namespace APIFileServer
 {
-    public class RestAPIConfiguration
-    {
-        public int HTTPPort { get; private set; } = 5000;
-        public int HTTPSPort { get; private set; } = 5001;
-        public int RestTImeOutMS { get; private set; } = 10000;
-        public string SharedFilePath { get; private set; } = string.Empty;
-        public string ServerWebPath { get; private set; } = string.Empty;
-        public bool OpenFileProvider { get; private set; } = false;
-        public string Host { get; private set; } = string.Empty;
-        public RestAPIConfiguration(ConfigurationManager config)
-        {
-            var sharedFileConf = config.GetSection("SharedFile");
-            SharedFilePath = sharedFileConf.GetValue<string>("ClientFiles") ?? string.Empty;
-
-            if (SharedFilePath == string.Empty)
-            {
-                throw new ArgumentException("No file path to share");
-            }
-
-            OpenFileProvider = sharedFileConf.GetValue<bool>("OpenFileProvider");
-            Host = sharedFileConf.GetValue<string>("Host") ?? string.Empty;
-
-            if (Host == string.Empty)
-            {
-                Host = "Localhost";
-            }
-
-            ServerWebPath = sharedFileConf.GetValue<string>("ServerFilesPath") ?? string.Empty;
-        }
-    }
-
     public class Program
     {
-        public static SecureConfigurator Secure { get; private set; } = null;
+        public static JWTSecureConfiguration? Secure { get; private set; } = null;
+
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
 
             // Add services to the container.
-            builder.Services.AddControllersWithViews();
+            //builder.Services.AddControllersWithViews();
 
-            RestAPIConfiguration restConf = new RestAPIConfiguration(builder.Configuration);
-            Secure = new SecureConfigurator();
+            Stopwatch st = new Stopwatch();
+            st.Start();
+            RestAPIConfiguration restConf = new RestAPIConfiguration(builder.Configuration).CreateFileList().MakeChunksFiles();
+            st.Stop();
+            Console.WriteLine($"Size list {restConf.FileList.TotalFileSize} bytes, {st.ElapsedMilliseconds}ms");
+
+            Secure = restConf.JWTConfig ?? new JWTSecureConfiguration();
+
+            if (!Directory.Exists(restConf.SharedFilePath))
+            {
+                throw new FileNotFoundException(restConf.SharedFilePath);
+            }
+
+            RestAPIFileCache RestCache = new RestAPIFileCache(1024*1024*100);
 
             var physicalProvider = new PhysicalFileProvider(restConf.SharedFilePath);
             builder.Services.AddSingleton<IFileProvider>(physicalProvider);
 
+            if(restConf.FileList is not null)
+                builder.Services.AddSingleton(restConf.FileList);
+
+            builder.Services.AddSingleton(RestCache);
             builder.Services.AddSingleton(Secure);
             builder.Services.AddScoped<JwtUtils, JwtUtils>();
             builder.Services.AddDirectoryBrowser();
-
-            Uri hostUri = new UriBuilder("http", restConf.Host, restConf.HTTPPort).Uri;
-            Uri hostUriHttps = new UriBuilder("https", restConf.Host, restConf.HTTPSPort).Uri;
 
             builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
             {
@@ -77,22 +64,6 @@ namespace APIFileServer
                 };
             });
 
-            var app = builder.Build();
-
-            app.Urls.Add(hostUri.AbsoluteUri);
-            app.Urls.Add(hostUriHttps.AbsoluteUri);
-            //app.Urls.Add(hostUri.AbsoluteUri);
-            //app.Urls.Add(hostUriHttps.AbsoluteUri);
-
-            if (restConf.OpenFileProvider)
-            {
-                app.UseDirectoryBrowser(new DirectoryBrowserOptions
-                {
-                    FileProvider = physicalProvider,
-                    RequestPath = restConf.ServerWebPath
-                });
-            }
-
             // Add services to the container.
 
             builder.Services.AddControllers();
@@ -100,19 +71,52 @@ namespace APIFileServer
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
+            var app = builder.Build();
+
+            if (restConf.OpenFileProvider)
+            {
+                app.UseDirectoryBrowser(new DirectoryBrowserOptions
+                {
+                    FileProvider = physicalProvider,
+                    RequestPath = restConf.UrlFileProvider
+                });
+            }
+
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
+            else //utilizzo le configurazioni del profilo 
+            {
+                Uri hostUri = new UriBuilder("http", restConf.Host, restConf.HTTPPort).Uri;
+                Uri hostUriHttps = new UriBuilder("https", restConf.Host, restConf.HTTPSPort).Uri;
+
+
+                app.Urls.Add(hostUri.AbsoluteUri);
+                app.Urls.Add(hostUriHttps.AbsoluteUri);
+            }
 
             app.UseHttpsRedirection();
             app.UseAuthorization();
 
+            //app.MapControllers();
+            //app.MapControllerRoute(
+            //    name: "FileApi",
+            //    pattern: "api/FileApi/{action=Index}/{id?}",
+            //    defaults: new { controller = "File", action = "Index" });
+
+            //app.MapControllerRoute(
+            //    name: "default", //Route Name
+            //    pattern: "{controller=Home}/{action=Index}/{id}" //Route Pattern
+            //);
+            //app.MapControllerRoute(
+            //    name: "File",
+            //    pattern: "File/{}",
+            //    defaults: new { controller = "File", action = "Index" });
 
             app.MapControllers();
-
             app.Run();
         }
     }
