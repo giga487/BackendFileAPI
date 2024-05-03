@@ -62,6 +62,77 @@ namespace APIFileServer.Controllers
 
             return new BadRequestResult();
         }
+
+        [HttpGet]
+        public async Task<IActionResult> DownloadFileByChunks(string fileName, int id)
+        {
+            if (string.IsNullOrEmpty(fileName) || fileName == null || _files is null)
+            {
+                return Content("File Name is Empty...");
+            }
+
+            // get the filePath
+            if (_fileProvider is PhysicalFileProvider filProviderPhysical)
+            {
+                string path = filProviderPhysical.Root;
+
+                if (!_files.FilesDict.TryGetValue(fileName, out FileInfoToShare? file) && file?.FileInfo != null)
+                {
+                    return new BadRequestResult();
+                }
+
+                if (file is null || file.FileInfo is null || !file.Chunks.Completed)
+                    return new BadRequestResult();
+
+                try
+                {
+                    ApiFileInfo objToSend = file.Chunks.ChunksList.ElementAt(id);
+
+                    if(objToSend != null)
+                    {
+                        // create a memory stream
+                        var memoryStream = new MemoryStream();
+                        using (var stream = new FileStream(objToSend.Filename, FileMode.Open))
+                        {
+                            await stream.CopyToAsync(memoryStream);
+                        }
+
+                        if (new FileExtensionContentTypeProvider().TryGetContentType(objToSend.Filename, out string contentType))
+                        {
+                            // set the position to return the file from
+                            memoryStream.Position = 0;
+
+                            return new FileStreamResult(memoryStream, contentType)
+                            {
+                                FileDownloadName = fileName
+                            };
+                        }
+                        else
+                        {
+                            memoryStream.Position = 0;
+
+                            Console.WriteLine($"Request of {objToSend.Filename}");
+                            return new FileStreamResult(memoryStream, "application/octet-stream")
+                            {
+                                FileDownloadName = fileName
+                            };
+
+                        }
+                        
+                        return new BadRequestResult();
+                    }
+                }
+                catch
+                {
+                    return new BadRequestResult();
+                }
+
+                return new BadRequestResult();
+            }
+            else
+                return new BadRequestResult();
+        }
+
         [HttpGet]
         public async Task<IActionResult> DownloadFile(string fileName)
         {

@@ -64,7 +64,14 @@ namespace RestClientDll
         {
             var request = new RestRequest(requestString);
 
-            return await _client.DownloadDataAsync(request, _tokenSc.Token);
+            try
+            {
+                return await _client.DownloadDataAsync(request, _tokenSc.Token);
+            }
+            catch
+            {
+                return default(byte[]);
+            }
         }
     }
 }

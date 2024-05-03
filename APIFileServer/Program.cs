@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Utils.JWTAuthentication;
+using Utils.FileHelper;
+using System.Diagnostics;
 
 namespace APIFileServer
 {
@@ -20,9 +22,11 @@ namespace APIFileServer
             // Add services to the container.
             //builder.Services.AddControllersWithViews();
 
-            RestAPIConfiguration restConf = new RestAPIConfiguration(builder.Configuration).CreateFileList();
-
-            Console.WriteLine($"Size list {restConf.FileList.TotalFileSize} bytes");
+            Stopwatch st = new Stopwatch();
+            st.Start();
+            RestAPIConfiguration restConf = new RestAPIConfiguration(builder.Configuration).CreateFileList().MakeChunksFiles();
+            st.Stop();
+            Console.WriteLine($"Size list {restConf.FileList.TotalFileSize} bytes, {st.ElapsedMilliseconds}ms");
 
             Secure = restConf.JWTConfig ?? new JWTSecureConfiguration();
 

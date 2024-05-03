@@ -16,7 +16,9 @@ namespace APIFileServer
         public List<string> SharedFiles { get; private set; } = new List<string>();
         public FileList? FileList { get; private set; } = null;
         public JWTSecureConfiguration? JWTConfig {get; private set;} = null;
-
+        public string ChunksMainFolder { get; private set; } = null;
+        public bool ChunksIsOK { get; private set; } = true;
+        public int MaxChunkSize { get; private set; } = 50 * 1024;
         public RestAPIConfiguration(ConfigurationManager config)
         {
             var sharedFileConf = config.GetSection("SharedFile");
@@ -47,6 +49,14 @@ namespace APIFileServer
                 throw new ArgumentException($"No file path name in configuration: \'URLFileProvider\'");
             }
 
+            ChunksMainFolder = sharedFileConf.GetValue<string>("ChunksMainFolder") ?? string.Empty;
+
+            if(ChunksMainFolder == string.Empty)
+            {
+                ChunksIsOK = false;
+                MaxChunkSize = sharedFileConf.GetValue<int>("MaxChunkSize");
+            }
+
             var jwtConfig = config.GetSection("JWTSecureData");
 
             if (jwtConfig is null)
@@ -70,6 +80,16 @@ namespace APIFileServer
         public RestAPIConfiguration CreateFileList()
         {
             FileList = new FileList(SharedFilePath).AddFiles();
+
+            return this;
+        }
+
+        public RestAPIConfiguration MakeChunksFiles()
+        {
+            //Task.Run(() =>
+            //{
+                FileList?.MakeChunks(ChunksMainFolder, MaxChunkSize);
+            //});
 
             return this;
         }

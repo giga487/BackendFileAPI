@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Utils.FileHelper
 {
-    public class FileHelper
+    public partial class FileHelper
     {
         public async static Task<string> Md5ResultAsync(string fileName)
         {
@@ -40,6 +40,11 @@ namespace Utils.FileHelper
             if (overwrite && File.Exists(filename))
             {
                 return;
+            }
+
+            if (!Directory.Exists(path))
+            {
+                Directory.CreateDirectory(path);
             }
 
             await Task.Run(() =>
@@ -167,5 +172,8 @@ namespace Utils.FileHelper
             fs.WriteByte(0);
             fs.Close();
         }
+
+
+
     }
 }

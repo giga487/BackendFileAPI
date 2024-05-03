@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -10,7 +11,7 @@ namespace Utils.FileHelper
         public string MD5 { get; set; } = string.Empty;
         public long Dim { get; set; } = 0;
         public FileInfo FileInfo { get; private set; } = null;
-
+        public FileHelper.ChunkFile Chunks { get; private set; } = null;
         public FileInfoToShare(string filename, string mainFolder)
         {
             string relativeName = FileHelper.RelativePath(filename, mainFolder);
@@ -18,6 +19,20 @@ namespace Utils.FileHelper
             FileInfo = new FileInfo(filename);
             Dim = FileInfo.Length;
             Filename = relativeName;
+
+        }
+
+        public FileInfoToShare MakeChunks(string chunkFolder, int maxSize)
+        {
+            //Task.Run(() =>
+            //{
+            Stopwatch st = new Stopwatch();
+            st.Start();
+            Chunks = new FileHelper.ChunkFile(FileInfo.FullName, chunkFolder, maxSize);
+            st.Stop();
+            //});
+
+            return this;
         }
 
 
@@ -40,7 +55,7 @@ namespace Utils.FileHelper
         public string Filename { get; set; } = string.Empty;
         public string MD5 { get; set; } = string.Empty;
         public long Dim { get; set; } = 0;
-
+        public int ChunksNumber { get; set; } = 0;
         public ApiFileInfo() { }
         public ApiFileInfo(FileInfoToShare f)
         {
@@ -101,6 +116,20 @@ namespace Utils.FileHelper
             return this;
         }
 
+        public FileList MakeChunks(string chunkFolder, int maxSize)
+        {
+            foreach (var f in FilesDict)
+            {
+                f.Value?.MakeChunks(chunkFolder, maxSize);
+
+                if (MinimalApiDict.TryGetValue(f.Key, out ApiFileInfo value)) //Aggiorno i minimal api 
+                {
+                    value.ChunksNumber = f.Value.Chunks.ChunksList.Count;
+                }
+            }
+
+            return this;
+        }
 
         public void AddFile(string name, FileInfoToShare f)
         {

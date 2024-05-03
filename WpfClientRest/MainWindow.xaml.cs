@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -44,21 +45,28 @@ namespace WpfClientRest
         public Dictionary<string, ApiFileInfo> Dict =  new Dictionary<string, ApiFileInfo>();
 
         private async void listBtn_Click(object sender, RoutedEventArgs e)
-        {            
-            var result = await client.CreateRequest<List<ApiFileInfo>>(RestClientDll.RestRequestType.Get, "api/File", "List");
-            Dict.Clear();
-
-            resultTxtBox.Text += $"Found {result.Count} elements"+Environment.NewLine;
-            foreach (var file in result)
+        {
+            try
             {
-                resultTxtBox.Text += $"{file.Filename} => {file.Dim} bytes" + Environment.NewLine;
-                Dict[file.Filename] = file;
+                var result = await client.CreateRequest<List<ApiFileInfo>>(RestClientDll.RestRequestType.Get, "api/File", "List");
+                Dict.Clear();
 
-                fileCombobox.Items.Add(file.Filename);
+                resultTxtBox.Text += $"Found {result.Count} elements" + Environment.NewLine;
+                foreach (var file in result)
+                {
+                    resultTxtBox.Text += $"{file.Filename} => {file.Dim} bytes, Chunks: {file.ChunksNumber}" + Environment.NewLine;
+                    Dict[file.Filename] = file;
+
+                    fileCombobox.Items.Add(file.Filename);
+                }
+
+                if (fileCombobox.Items.Count != 0)
+                    fileCombobox.SelectedIndex = 0;
             }
-
-            if(fileCombobox.Items.Count != 0)
-                fileCombobox.SelectedIndex = 0;
+            catch(Exception ex)
+            {
+                resultTxtBox.Text += $"{ex.Message}" + Environment.NewLine;
+            }
         }
 
         private async void downloadBtn_Click(object sender, RoutedEventArgs e)
@@ -73,12 +81,82 @@ namespace WpfClientRest
 
             resultTxtBox.Text += $"{fileNameSelected} => Same: {result}" + Environment.NewLine;
 
-            await FileHelper.MakeFile(file, fileNameSelected, "", true);
+            await FileHelper.MakeFile(file, "", fileNameSelected, true);
+        }
+
+        private async void downloadChunkBtn_Click(object sender, RoutedEventArgs e)
+        {
+            string fileNameSelected = (string)fileCombobox.SelectedItem;
+
+            string requestString = $"/api/File/DownloadFileByChunks?fileName={fileNameSelected}&Id={chunkFileCombobox.SelectedItem}";
+            byte[] file = await client.DownloadRequest(requestString);
+            string md5 = FileHelper.Md5Result(file);
+
+            FileInfo f = new FileInfo(fileNameSelected);
+
+            string filename = $"{f.Name.Replace(f.Extension, "")}_{chunkFileCombobox.SelectedItem}{f.Extension}"; 
+            resultTxtBox.Text += $"{fileNameSelected}" + Environment.NewLine;
+
+            await FileHelper.MakeFile(file, "Test", filename, true);
         }
 
         private void createFileBtn_Click(object sender, RoutedEventArgs e)
         {
-            FileHelper.MakeTestFile(1024 * 1024 * 1024, Directory.GetCurrentDirectory());
+            FileHelper.MakeTestFile(1024 * 1024 * 1024, Directory.GetCurrentDirectory(), "t1.bin");
+            FileHelper.MakeTestFile(1024 * 1024 * 500, Directory.GetCurrentDirectory(), "t12.mul");
+            FileHelper.MakeTestFile(1024 * 1024 * 100, Directory.GetCurrentDirectory(), "t3.mul");
+            FileHelper.MakeTestFile(1024 * 1024 * 20, Directory.GetCurrentDirectory(), "t4.mul");
+            FileHelper.MakeTestFile(1024 * 1024 * 40, Directory.GetCurrentDirectory(), "t45.mul");
+            FileHelper.MakeTestFile(1024 * 1024 * 60, Directory.GetCurrentDirectory(), "t6.mul");
+            FileHelper.MakeTestFile(1024 * 1024 * 40, Directory.GetCurrentDirectory(), "t7.mul");
+        }
+
+        private void clearBtn_Click(object sender, RoutedEventArgs e)
+        {
+            resultTxtBox.Clear();
+        }
+
+        private void fileCombobox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            chunkFileCombobox.Items.Clear();
+
+            var apiFileInfo = Dict[(string)fileCombobox.SelectedItem];
+
+            for (int i = 0; i < apiFileInfo.ChunksNumber; i++) 
+            {
+                chunkFileCombobox.Items.Add(i);
+            }
+        }
+
+        private async void downloadAllChunkBtn_Click(object sender, RoutedEventArgs e)
+        {
+            string fileNameSelected = (string)fileCombobox.SelectedItem;
+            var apiFileInfo = Dict[fileNameSelected];
+
+            double percentage = 0;
+
+            Stopwatch st = new Stopwatch();
+            st.Start();
+
+            for (int i = 0; i < apiFileInfo.ChunksNumber; i++)
+            {
+                percentage = (double)i / apiFileInfo.ChunksNumber* 100;
+                //Task.Run(async () =>
+                //{
+                string requestString = $"/api/File/DownloadFileByChunks?fileName={fileNameSelected}&Id={i}";
+                byte[] file = await client.DownloadRequest(requestString);
+
+                FileInfo f = new FileInfo(fileNameSelected);
+
+                string filename = $"{f.Name.Replace(f.Extension, "")}_{i}{f.Extension}";
+
+                await FileHelper.MakeFile(file, "Test", filename, true);
+                //resultTxtBox.Text += $"Downloaded: {percentage.ToString("F4")}%" + Environment.NewLine;
+                //});
+            }
+
+            st.Stop();
+            resultTxtBox.Text += $"Downloaded: {fileNameSelected} in {st.ElapsedMilliseconds}ms" + Environment.NewLine;
         }
     }
 }

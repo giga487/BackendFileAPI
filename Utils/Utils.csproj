@@ -42,6 +42,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="File\FileHelper.cs" />
+    <Compile Include="File\FileManaging.cs" />
     <Compile Include="File\FileUtils.cs" />
     <Compile Include="JWT\SecureConfigurator.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
