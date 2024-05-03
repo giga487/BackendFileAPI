@@ -70,7 +70,7 @@ namespace RestClientDll
             {
                 return await _client.DownloadDataAsync(request, _tokenSc.Token);
             }
-            catch
+            catch(Exception e)
             {
                 return default(byte[]);
             }

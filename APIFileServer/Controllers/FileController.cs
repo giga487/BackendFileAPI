@@ -99,7 +99,8 @@ namespace APIFileServer.Controllers
                         {
                             using (var stream = new FileStream(objToSend.Filename, FileMode.Open))
                             {
-                                stream.CopyTo(memoryStream);
+                                memoryStream = new MemoryStream();
+                                await stream.CopyToAsync(memoryStream);
                                 _memoryCache.AddMemory(objToSend.Filename, memoryStream);
                             }
                         }
