@@ -100,10 +100,15 @@ namespace APIFileServer.Controllers
                                 Console.WriteLine($"Request of {objToSend.Filename} -> failed");
                             }
 
-                            FileInfo f = new FileInfo(objToSend.Filename);
-
-                            return File(memoryBuffer, "application/octet-stream");
-
+                            if (new FileExtensionContentTypeProvider().TryGetContentType(objToSend.Filename, out string contentType))
+                            {
+                                // set the position to return the file from
+                                return File(memoryBuffer, contentType);
+                            }
+                            else
+                            {
+                                return File(memoryBuffer, "application/octet-stream");
+                            }
                         }
                     }
                     
