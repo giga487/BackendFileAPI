@@ -7,28 +7,29 @@
             public byte[]? MemoryDump { get; set; } = null;
             public DateTime DateTime { get; set; } = DateTime.Now;
 
-            public MemoryItem(MemoryStream stream)
+            public MemoryItem(byte[] stream)
             { 
                 MemoryDump = new byte[stream.Length];
-                Array.Copy(stream.GetBuffer(), MemoryDump, stream.Length);
+                Array.Copy(stream, MemoryDump, stream.Length);
             }
         }
 
         private volatile Dictionary<string, MemoryItem> Memory = new Dictionary<string, MemoryItem>();
         public long MemorySize { get; private set; } = 0;
-        public int MaxMemory { get; set; } = 1024*1024*1024;
+        public long MaxMemory { get; set; } = 1024*1024*1024;
 
         public RestAPIFileCache(): this(1024*1024*1024)
         {
         }
 
-        public RestAPIFileCache(int MaxMemorySize)
+        public RestAPIFileCache(long MaxMemorySize)
         {
             MaxMemory = MaxMemorySize;
         }
-        public bool AddMemory(string key, MemoryStream stream)
+
+        public bool AddMemory(string key, byte[] streamData)
         {
-            long size = stream.Length * sizeof(byte);
+            long size = streamData.Length * sizeof(byte);
 
             while (size > MaxMemory - MemorySize || MemorySize < 0)
             {
@@ -37,7 +38,7 @@
 
             try
             {
-                if (Memory.TryAdd(key, new MemoryItem(stream)))
+                if (Memory.TryAdd(key, new MemoryItem(streamData)))
                 {
                     MemorySize += size;
                     return true;

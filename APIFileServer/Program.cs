@@ -24,9 +24,13 @@ namespace APIFileServer
             // Add services to the container.
             //builder.Services.AddControllersWithViews();
 
+            long maxMem = (long)1024 * 1024 * 1024 * 4;
+
+            RestAPIFileCache RestCache = new RestAPIFileCache(maxMem);
+
             Stopwatch st = new Stopwatch();
             st.Start();
-            RestAPIConfiguration restConf = new RestAPIConfiguration(builder.Configuration).CreateFileList().MakeChunksFiles();
+            RestAPIConfiguration restConf = new RestAPIConfiguration(builder.Configuration).CreateFileList().MakeChunksFiles().FillCache(RestCache);
             st.Stop();
             Console.WriteLine($"Size list {restConf.FileList.TotalFileSize} bytes, {st.ElapsedMilliseconds}ms");
 
@@ -37,9 +41,10 @@ namespace APIFileServer
                 throw new FileNotFoundException(restConf.SharedFilePath);
             }
 
-            RestAPIFileCache RestCache = new RestAPIFileCache(1024*1024*100);
 
-            var physicalProvider = new PhysicalFileProvider(restConf.SharedFilePath);
+
+            var physicalProvider = new PhysicalFileProvider(restConf.PhysicalFileRoot);
+
             builder.Services.AddSingleton<IFileProvider>(physicalProvider);
 
             if(restConf.FileList is not null)

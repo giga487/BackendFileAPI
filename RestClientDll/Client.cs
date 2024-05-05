@@ -64,7 +64,7 @@ namespace RestClientDll
         public async Task<byte[]> DownloadRequest(string requestString)
         {
             var request = new RestRequest(requestString);
-            request.Timeout = MaxTimeout;
+            request.Timeout = 60;
 
             try
             {

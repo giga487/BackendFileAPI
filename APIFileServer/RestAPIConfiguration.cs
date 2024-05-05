@@ -1,4 +1,5 @@
-﻿using JWTAuthentication;
+﻿using APIFileServer.source;
+using JWTAuthentication;
 using Utils.FileHelper;
 using Utils.JWTAuthentication;
 
@@ -19,6 +20,7 @@ namespace APIFileServer
         public string ChunksMainFolder { get; private set; } = null;
         public bool ChunksIsOK { get; private set; } = true;
         public int MaxChunkSize { get; private set; } = 50 * 1024;
+        public string PhysicalFileRoot { get; private set; } = string.Empty;
         public RestAPIConfiguration(ConfigurationManager config)
         {
             var sharedFileConf = config.GetSection("SharedFile");
@@ -49,6 +51,8 @@ namespace APIFileServer
                 throw new ArgumentException($"No file path name in configuration: \'URLFileProvider\'");
             }
 
+
+            PhysicalFileRoot = sharedFileConf.GetValue<string>("PhysicalProvider") ?? string.Empty;
             ChunksMainFolder = sharedFileConf.GetValue<string>("ChunksMainFolder") ?? string.Empty;
 
             if (ChunksMainFolder == string.Empty)
@@ -94,6 +98,43 @@ namespace APIFileServer
             //{
             FileList?.MakeChunksFiles(ChunksMainFolder, MaxChunkSize);
             //});
+
+            return this;
+        }
+
+        public RestAPIConfiguration FillCache(RestAPIFileCache memoryCache)
+        {
+            if(FileList == null)
+            {
+                return null;
+            }
+
+            foreach(var keyValFileShared in FileList.FilesDict)
+            {
+                var fileShared = keyValFileShared.Value;
+
+                if(fileShared != null)
+                {
+                    for(int i = 0; i < fileShared.Chunks.ChunksList.Count; i++)
+                    {
+                        ApiFileInfo objToSend = fileShared.Chunks.ChunksList.ElementAt(i);
+
+                        using (var stream = new FileStream(objToSend.Filename, FileMode.Open))
+                        {
+                            var memoryStream = new MemoryStream();
+                            if ((int)stream.Length > 0)
+                            {
+                                stream.CopyTo(memoryStream, (int)stream.Length);
+                                memoryCache.AddMemory(objToSend.Filename, memoryStream.GetBuffer());
+                            }
+                            else
+                            {
+                                Console.WriteLine($"{objToSend.Filename} has L: {(int)stream.Length}");
+                            }
+                        }
+                    }
+                }
+            }
 
             return this;
         }

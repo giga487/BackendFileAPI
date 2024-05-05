@@ -35,27 +35,34 @@ namespace Utils.FileHelper
 
         public async static Task MakeFile(byte[] bytes, string path, string filename, bool overwrite)
         {
-            string fileName = Path.Combine(path, filename);
-
-            if (overwrite && File.Exists(filename))
+            try
             {
-                return;
+                string fileName = Path.Combine(path, filename);
+
+                if (overwrite && File.Exists(filename))
+                {
+                    return;
+                }
+
+                if (!Directory.Exists(path))
+                {
+                    Directory.CreateDirectory(path);
+                }
+
+                if (bytes is null)
+                {
+                    return;
+                }
+
+                await Task.Run(() =>
+                {
+                    File.WriteAllBytes(fileName, bytes);
+                });
             }
-
-            if (!Directory.Exists(path))
+            catch
             {
-                Directory.CreateDirectory(path);
+
             }
-
-            if (bytes is null)
-            {
-                return;
-            }
-
-            await Task.Run(() =>
-            {
-                File.WriteAllBytes(fileName, bytes);
-            });
         }
 
         public async static Task MakeFile(Stream fileStream, string path, string filename, bool overwrite)

@@ -52,8 +52,19 @@ namespace Utils.FileHelper
                 List<ApiFileInfo> chunks = new List<ApiFileInfo>();
                 FileInfo f = new FileInfo(filename);
 
-                string fileBaseName = f.Name.Replace(f.Extension, "");
-                string modifiedName = $"{fileBaseName}_{f.Extension.Replace(".","")}" ;
+                string fileBaseName = string.Empty;
+                string modifiedName = string.Empty;
+
+                if (f.Extension != "")
+                {
+                    fileBaseName = f.Name.Replace(f.Extension, "");
+                    modifiedName = $"{fileBaseName}_{f.Extension.Replace(".", "")}";
+                }
+                else
+                {
+                    modifiedName = $"{f.Name}_folder";
+                }
+
                 string newFolder = Path.Combine(whereToPut, modifiedName);
 
                 if(!Directory.Exists(newFolder))

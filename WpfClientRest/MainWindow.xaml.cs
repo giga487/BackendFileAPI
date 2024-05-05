@@ -70,34 +70,55 @@ namespace WpfClientRest
         }
 
         private async void downloadBtn_Click(object sender, RoutedEventArgs e)
-        { 
+        {
             string fileNameSelected = (string)fileCombobox.SelectedItem;
 
             string requestString = $"/api/File/DownloadFile?fileName={fileNameSelected}";
             byte[] file = await client.DownloadRequest(requestString);
-            string md5 = FileHelper.Md5Result(file);
 
-            bool result = md5 == Dict[fileNameSelected].MD5 ? true : false;
+            if (file != null)
+            {
+                string md5 = FileHelper.Md5Result(file);
 
-            resultTxtBox.Text += $"{fileNameSelected} => Same: {result}" + Environment.NewLine;
+                bool result = md5 == Dict[fileNameSelected].MD5 ? true : false;
 
-            await FileHelper.MakeFile(file, "", fileNameSelected, true);
+                resultTxtBox.Text += $"{fileNameSelected} => Same: {result}" + Environment.NewLine;
+
+                await FileHelper.MakeFile(file, "Test", fileNameSelected, true);
+            }
+            else
+            {
+                resultTxtBox.Text += $"RESULT: NULL" + Environment.NewLine;
+            }
+
         }
 
         private async void downloadChunkBtn_Click(object sender, RoutedEventArgs e)
         {
             string fileNameSelected = (string)fileCombobox.SelectedItem;
 
+            if (itembox.SelectedItem is null)
+                itembox.SelectedItem = 0;
+
             string requestString = $"/api/File/DownloadFileByChunks?fileName={fileNameSelected}&Id={itembox.SelectedItem}";
             byte[] file = await client.DownloadRequest(requestString);
-            string md5 = FileHelper.Md5Result(file);
 
-            FileInfo f = new FileInfo(fileNameSelected);
+            if (file != null)
+            {
+                string md5 = FileHelper.Md5Result(file);
 
-            string filename = $"{f.Name.Replace(f.Extension, "")}_{itembox.SelectedItem}{f.Extension}"; 
-            resultTxtBox.Text += $"{fileNameSelected}" + Environment.NewLine;
+                FileInfo f = new FileInfo(fileNameSelected);
 
-            await FileHelper.MakeFile(file, "Test", filename, true);
+                string filename = $"{f.Name.Replace(f.Extension, "")}_{itembox.SelectedItem}{f.Extension}";
+                resultTxtBox.Text += $"{fileNameSelected}" + Environment.NewLine;
+
+                await FileHelper.MakeFile(file, "Test", filename, true);
+            }
+            else
+            {
+                resultTxtBox.Text += $"{fileNameSelected} {itembox.SelectedItem} => RESULT: NULL" + Environment.NewLine;
+            }
+
         }
 
         private void createFileBtn_Click(object sender, RoutedEventArgs e)
@@ -148,11 +169,18 @@ namespace WpfClientRest
 
                 FileInfo f = new FileInfo(fileNameSelected);
 
-                string filename = $"{f.Name.Replace(f.Extension, "")}_{i}{f.Extension}";
+                if (file != null)
+                {
+                    string filename = $"{f.Name.Replace(f.Extension, "")}_{i}{f.Extension}";
 
-                await FileHelper.MakeFile(file, "Test", filename, true);
-                //resultTxtBox.Text += $"Downloaded: {percentage.ToString("F4")}%" + Environment.NewLine;
-                //});
+                    await FileHelper.MakeFile(file, "Test", filename, true);
+                    resultTxtBox.Text += $"Downloaded: {percentage.ToString("F4")}%" + Environment.NewLine;
+                    //});
+                }
+                else
+                {
+                    resultTxtBox.Text += $"FAIL to doweenload {fileNameSelected} {i}" + Environment.NewLine;
+                }
             }
 
             st.Stop();
@@ -160,17 +188,18 @@ namespace WpfClientRest
         }
 
         int MaxTry = 5;
-        public async void DownloadChunks(string fileNameSelected, string pathName, RestClientDll.RestClient localClient)
+        public async Task DownloadChunks(string fileNameSelected, string pathName, RestClientDll.RestClient localClient)
         {
             Stopwatch st = new Stopwatch();
             st.Start();
             Dictionary<int, bool> ChunkStatus = new Dictionary<int, bool>();
             var apiFileInfo = Dict[fileNameSelected];
 
+            int downloadedValue = 0;
             await Task.Run(async () =>
             {
                 //var result = await localClient.CreateRequest<List<ApiFileInfo>>(RestClientDll.RestRequestType.Get, "api/File", "List");
-
+                
                 double percentage = 0;
 
                 for (int t = 0; t < apiFileInfo.ChunksNumber; t++)
@@ -194,6 +223,8 @@ namespace WpfClientRest
                             await Task.Delay(50);
                             continue;
                         }
+
+                        downloadedValue += file.Length;
 
                         ChunkStatus[t] = true;
                         await FileHelper.MakeFile(file, pathName, filename, true);
@@ -221,7 +252,9 @@ namespace WpfClientRest
             }
 
             st.Stop();
-            resultTxtBox.Text += $"Downloaded {ChunkStatus.Values.Count}/{apiFileInfo.ChunksNumber}, Status: {status} after {st.ElapsedMilliseconds}ms" + Environment.NewLine;
+
+            string kBytesPerMS = ((double)downloadedValue/1024/1024 /(double)st.ElapsedMilliseconds*1000).ToString("F2");
+            resultTxtBox.Text += $"Downloaded {ChunkStatus.Values.Count}/{apiFileInfo.ChunksNumber}, Status: {status} after {st.ElapsedMilliseconds}ms, L: {kBytesPerMS} MBytes/s" + Environment.NewLine;
         }
 
 
@@ -232,31 +265,40 @@ namespace WpfClientRest
                 howMuchResult = 5;
             }
 
+
             for (int index = 0; index < howMuchResult; index++)
             {
-                Uri createdUri = null;
-                string fileNameSelected = "";
-                RestClientDll.RestClient localClient = null;
-                string pathName = $"Test_{index}";
-
-                Dispatcher.Invoke(() =>
+                try
                 {
-                    if (int.TryParse(portTxt.Text, out int port))
+                    Uri createdUri = null;
+                    string fileNameSelected = "";
+                    RestClientDll.RestClient localClient = null;
+                    string pathName = $"Test_{index}";
+
+                    Dispatcher.Invoke(() =>
                     {
-                        createdUri = new UriBuilder(schemeCombobox.Text, hostTxt.Text, port).Uri;
-                        localClient = new RestClientDll.RestClient(createdUri);
+                        if (int.TryParse(portTxt.Text, out int port))
+                        {
+                            createdUri = new UriBuilder(schemeCombobox.Text, hostTxt.Text, port).Uri;
+                            localClient = new RestClientDll.RestClient(createdUri);
 
-                        uriTxt.Text = createdUri.AbsoluteUri;
-                    }
-                    fileNameSelected = (string)fileCombobox.SelectedItem;
-                });
+                            uriTxt.Text = createdUri.AbsoluteUri;
+                        }
+                        fileNameSelected = (string)fileCombobox.SelectedItem;
+                    });
 
-                Directory.CreateDirectory(pathName);
-                Dictionary<int, string> indexFileName = new Dictionary<int, string>();
+                    Directory.CreateDirectory(pathName);
+                    Dictionary<int, string> indexFileName = new Dictionary<int, string>();
 
-                DownloadChunks(fileNameSelected, pathName, localClient);
+                    DownloadChunks(fileNameSelected, pathName, localClient);
 
-                await Task.Delay(100);
+                    await Task.Delay(100);
+                }
+                catch(Exception ex)
+                {
+                    resultTxtBox.Text += $"{ex.Message}" + Environment.NewLine;
+
+                }
             }
         }
     }

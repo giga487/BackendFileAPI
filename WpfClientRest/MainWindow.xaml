@@ -24,7 +24,7 @@
             <ComboBox x:Name="fileCombobox" HorizontalAlignment="Left" Margin="10,43,0,0" VerticalAlignment="Top" Width="120" SelectionChanged="fileCombobox_SelectionChanged" Height="22"/>
             <Button x:Name="downloadBtn" Content="Get Selected File" HorizontalAlignment="Left" Margin="148,43,0,0" VerticalAlignment="Top" Width="115" Height="22" Click="downloadBtn_Click"/>
             <Button x:Name="createFileBtn" Content="Create File" HorizontalAlignment="Left" Margin="253,10,0,0" VerticalAlignment="Top" Width="96" RenderTransformOrigin="0.519,0.517" Click="createFileBtn_Click" Height="20"/>
-            <Button x:Name="clearBtn" Content="Clear" Margin="315,90,8,10" Click="clearBtn_Click" Grid.Row="1"/>
+            <Button x:Name="clearBtn" Content="Clear" Margin="315,218,8,10" Click="clearBtn_Click"/>
             <Button x:Name="downloadChunk" Content="Get Selected Chunk" HorizontalAlignment="Left" Margin="148,82,0,0" VerticalAlignment="Top" Width="115" Height="22" Click="downloadChunkBtn_Click"/>
             <Button x:Name="downloadAllChunkBtn" Content="Get Chunks" HorizontalAlignment="Left" Margin="281,82,0,0" VerticalAlignment="Top" Width="68" Height="22" Click="downloadAllChunkBtn_Click"/>
             <ListBox x:Name="itembox" Margin="10,72,229,48"/>
