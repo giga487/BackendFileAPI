@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.FileProviders;
 using System;
+using System.IO;
 using System.Net.Mime;
 using Utils.FileHelper;
 
@@ -67,6 +68,30 @@ namespace APIFileServer.Controllers
         }
 
         [HttpGet]
+        public async Task<IActionResult> CacheRemainingSize()
+        {
+            if (_memoryCache is not null)
+            {
+                return Ok(_memoryCache.MaxMemory - _memoryCache.MemorySize);
+            }
+            else
+                return new BadRequestResult();
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> CacheItems()
+        {
+            List<string> cacheItems = new List<string>();
+            if (_memoryCache is not null)
+            {
+                return Ok(_memoryCache.Items);
+            }
+            else
+                return new BadRequestResult();
+        }
+
+
+        [HttpGet]
         public async Task<IActionResult> DownloadFileByChunks(string fileName, int id)
         {
             if (string.IsNullOrEmpty(fileName) || fileName == null || _files is null)
@@ -89,29 +114,79 @@ namespace APIFileServer.Controllers
 
                 try
                 {
-                    ApiFileInfo objToSend = file.Chunks.ChunksList.ElementAt(id);                    
+                    ApiFileInfo objToSend = file.Chunks.ChunksList.ElementAt(id);
 
-                    if (_memoryCache.Get(objToSend.Filename, out byte[] memoryBuffer))
+                    if (!_memoryCache.Get(objToSend.Filename, out byte[]? memoryBuffer))
                     {
-                        using (MemoryStream memoryStream = new MemoryStream(memoryBuffer))
+                        using (var stream = new FileStream(objToSend.Filename, FileMode.Open))
                         {
-                            if (memoryStream.Length == 0)
+                            using (MemoryStream memoryStream = new MemoryStream())
                             {
-                                Console.WriteLine($"Request of {objToSend.Filename} -> failed");
-                            }
-
-                            if (new FileExtensionContentTypeProvider().TryGetContentType(objToSend.Filename, out string contentType))
-                            {
-                                // set the position to return the file from
-                                return File(memoryBuffer, contentType);
-                            }
-                            else
-                            {
-                                return File(memoryBuffer, "application/octet-stream");
+                                stream.CopyTo(memoryStream, (int)stream.Length);
+                                _memoryCache.AddMemory(objToSend.Filename, memoryStream.GetBuffer());
                             }
                         }
                     }
-                    
+
+                    _memoryCache.Get(objToSend.Filename, out memoryBuffer);
+
+                    if (memoryBuffer != null)
+                    {
+                        if (new FileExtensionContentTypeProvider().TryGetContentType(objToSend.Filename, out string? contentType))
+                        {
+                            return File(memoryBuffer, contentType);
+                        }
+                        else
+                        {
+                            return File(memoryBuffer, "application/octet-stream");
+                        }
+                    }
+
+
+
+                    //if (_memoryCache.Get(objToSend.Filename, out byte[] memoryBuffer))
+                    //{
+                    //    using (MemoryStream memoryStream = new MemoryStream(memoryBuffer))
+                    //    {
+                    //        if (memoryStream.Length == 0)
+                    //        {
+                    //            Console.WriteLine($"Request of {objToSend.Filename} -> failed");
+                    //        }
+
+                    //        if (new FileExtensionContentTypeProvider().TryGetContentType(objToSend.Filename, out string contentType))
+                    //        {
+                    //            // set the position to return the file from
+                    //            return File(memoryBuffer, contentType);
+                    //        }
+                    //        else
+                    //        {
+                    //            return File(memoryBuffer, "application/octet-stream");
+                    //        }
+                    //    }
+                    //}
+                    //else
+                    //{
+                    //    using (var stream = new FileStream(file.FileInfo.FullName, FileMode.Open))
+                    //    {
+                    //        using (MemoryStream memoryStream = new MemoryStream())
+                    //        {
+                    //            await stream.CopyToAsync(memoryStream);
+                    //            if (new FileExtensionContentTypeProvider().TryGetContentType(objToSend.Filename, out string contentType))
+                    //            {
+                    //                return File(memoryBuffer, contentType);
+                    //            }
+                    //            else
+                    //            {
+                    //                return File(memoryBuffer, "application/octet-stream");
+                    //            }
+
+                    //        }
+
+                    //    }
+
+                    //}
+
+
                     //using (var stream = new FileStream(objToSend.Filename, FileMode.Open))
                     //{
                     //    memoryStream = new MemoryStream();
@@ -142,7 +217,7 @@ namespace APIFileServer.Controllers
                         }
 
                         FileInfo f = new FileInfo(objToSend.Filename);
-                        
+
                         using(memoryStream)
                         {
                             if (memoryStream.Length == 0)
@@ -176,7 +251,7 @@ namespace APIFileServer.Controllers
                     }
                     */
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     return new BadRequestResult();
                 }

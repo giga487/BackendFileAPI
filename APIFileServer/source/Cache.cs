@@ -12,6 +12,11 @@
                 MemoryDump = new byte[stream.Length];
                 Array.Copy(stream, MemoryDump, stream.Length);
             }
+            
+            public void Update()
+            {
+                DateTime  = DateTime.Now;
+            }
         }
 
         private volatile Dictionary<string, MemoryItem> Memory = new Dictionary<string, MemoryItem>();
@@ -26,6 +31,15 @@
         {
             MaxMemory = MaxMemorySize;
         }
+        
+        public void UpdateAccess(string key)
+        {
+            if (Memory.TryGetValue(key, out var value))
+            {
+                value.Update();
+            }
+        }
+        public List<string> Items => Memory.Keys.ToList();
 
         public bool AddMemory(string key, byte[] streamData)
         {
@@ -57,6 +71,7 @@
             if (Memory.TryGetValue(key, out var value))
             {
                 output = value.MemoryDump;
+                value.Update();
                 return true;
             }
 
@@ -70,6 +85,9 @@
                 return;
 
             var oldest = Memory.MinBy(x => x.Value.DateTime);
+            MemorySize -= oldest.Value.MemoryDump.Length;
+
+            Console.WriteLine($"Removed from cache {oldest.Key}");
             Memory.Remove(oldest.Key);
         }
 

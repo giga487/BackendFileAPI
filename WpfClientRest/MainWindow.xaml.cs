@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RestSharp;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -74,7 +75,7 @@ namespace WpfClientRest
             string fileNameSelected = (string)fileCombobox.SelectedItem;
 
             string requestString = $"/api/File/DownloadFile?fileName={fileNameSelected}";
-            byte[] file = await client.DownloadRequest(requestString);
+            byte[] file = client.DownloadRequest(requestString);
 
             if (file != null)
             {
@@ -101,18 +102,20 @@ namespace WpfClientRest
                 itembox.SelectedItem = 0;
 
             string requestString = $"/api/File/DownloadFileByChunks?fileName={fileNameSelected}&Id={itembox.SelectedItem}";
-            byte[] file = await client.DownloadRequest(requestString);
+            var request = new RestSharp.RestRequest(requestString, Method.Get);
+            var array = client.Client.DownloadData(request);
 
-            if (file != null)
+            if (array != null)
             {
-                string md5 = FileHelper.Md5Result(file);
+                string md5 = FileHelper.Md5Result(array);
 
                 FileInfo f = new FileInfo(fileNameSelected);
 
                 string filename = $"{f.Name.Replace(f.Extension, "")}_{itembox.SelectedItem}{f.Extension}";
+                await FileHelper.MakeFile(array, "Test", filename, true);
                 resultTxtBox.Text += $"{fileNameSelected}" + Environment.NewLine;
 
-                await FileHelper.MakeFile(file, "Test", filename, true);
+
             }
             else
             {
@@ -165,7 +168,7 @@ namespace WpfClientRest
                 //Task.Run(async () =>
                 //{
                 string requestString = $"/api/File/DownloadFileByChunks?fileName={fileNameSelected}&Id={i}";
-                byte[] file = await client.DownloadRequest(requestString);
+                byte[] file = client.DownloadRequest(requestString);
 
                 FileInfo f = new FileInfo(fileNameSelected);
 
@@ -188,73 +191,96 @@ namespace WpfClientRest
         }
 
         int MaxTry = 5;
-        public async Task DownloadChunks(string fileNameSelected, string pathName, RestClientDll.RestClient localClient)
+        public async Task DownloadChunks(string fileNameSelected, string pathName)
         {
             Stopwatch st = new Stopwatch();
             st.Start();
-            Dictionary<int, bool> ChunkStatus = new Dictionary<int, bool>();
+
             var apiFileInfo = Dict[fileNameSelected];
+            bool[] chunks = new bool[apiFileInfo.ChunksNumber];
 
             int downloadedValue = 0;
+
             await Task.Run(async () =>
             {
                 //var result = await localClient.CreateRequest<List<ApiFileInfo>>(RestClientDll.RestRequestType.Get, "api/File", "List");
                 
                 double percentage = 0;
 
-                for (int t = 0; t < apiFileInfo.ChunksNumber; t++)
+                var chucksToDo = new List<int>();
+
+                for (int i = 0; i < apiFileInfo.ChunksNumber; i++)
                 {
-                    percentage = (double)t / apiFileInfo.ChunksNumber * 100;
-                    byte[] file = null;
-                    FileInfo f = new FileInfo(fileNameSelected);
+                    chucksToDo.Add(i);
+                }
 
-                    string filename = $"{f.Name.Replace(f.Extension, "")}_{t}{f.Extension}";
+                int cycle = 0;
 
-                    ChunkStatus[t] = false;
-                    int testDownload = 0;
+                while (true)
+                {
+                    if (chucksToDo.Count == 0)
+                        break;
 
-                    for (testDownload = 0; testDownload < MaxTry; testDownload++)
+                    Dispatcher.Invoke(() =>
                     {
-                        string requestString = $"/api/File/DownloadFileByChunks?fileName={fileNameSelected}&Id={t}";
-                        file = await localClient.DownloadRequest(requestString);
+                        resultTxtBox.Text += $"{pathName} cycle: {cycle++} " + Environment.NewLine;
+                    });
 
-                        if (file is null)
+                    foreach (int t in chucksToDo.ToList())
+                    {
+                        byte[] file = null;
+                        FileInfo f = new FileInfo(fileNameSelected);
+
+                        string filename = $"{f.Name.Replace(f.Extension, "")}_{t}{f.Extension}";
+
+                        chunks[t] = false;
+                        int testDownload = 0;
+
+                        for (testDownload = 0; testDownload < MaxTry; testDownload++)
                         {
-                            await Task.Delay(50);
-                            continue;
+                            string requestString = $"/api/File/DownloadFileByChunks?fileName={fileNameSelected}&Id={t}";
+                            var request = new RestSharp.RestRequest(requestString, Method.Get);
+                            var array = client.Client.DownloadData(request);
+
+                            if (array is null)
+                            {
+                                await Task.Delay(50);
+                                continue;
+                            }
+
+                            downloadedValue += array.Length;
+
+                            chucksToDo.Remove(t);
+                            chunks[t] = true;
+                            await FileHelper.MakeFile(array, pathName, filename, true);
+                            break; //vado a salvare il file e poi al prossimo
                         }
 
-                        downloadedValue += file.Length;
-
-                        ChunkStatus[t] = true;
-                        await FileHelper.MakeFile(file, pathName, filename, true);
-                        break; //vado a salvare il file e poi al prossimo
-                    }
-
-                    if (!ChunkStatus[t])
-                    {
-                        Dispatcher.Invoke(() =>
+                        if (!chunks[t])
                         {
-                            resultTxtBox.Text += $"Fail to download {filename} for {pathName} test after {testDownload} try" + Environment.NewLine;
-                        });
-                    }
+                            Dispatcher.Invoke(() =>
+                            {
+                                resultTxtBox.Text += $"Fail to download {filename} for {pathName} test after {testDownload} try" + Environment.NewLine;
+                            });
+                        }
 
-                    //resultTxtBox.Text += $"Downloaded: {percentage.ToString("F4")}%" + Environment.NewLine;
-                    //});
+                        //resultTxtBox.Text += $"Downloaded: {percentage.ToString("F4")}%" + Environment.NewLine;
+                        //});
+                    }
                 }
             });
 
             bool status = true;
 
-            foreach (var objDownloaded in ChunkStatus)
+            foreach (var objDownloaded in chunks)
             {
-                status &= objDownloaded.Value;
+                status &= objDownloaded;
             }
 
             st.Stop();
 
             string kBytesPerMS = ((double)downloadedValue/1024/1024 /(double)st.ElapsedMilliseconds*1000).ToString("F2");
-            resultTxtBox.Text += $"Downloaded {ChunkStatus.Values.Count}/{apiFileInfo.ChunksNumber}, Status: {status} after {st.ElapsedMilliseconds}ms, L: {kBytesPerMS} MBytes/s" + Environment.NewLine;
+            resultTxtBox.Text += $"{pathName} => Downloaded {chunks.Length}/{apiFileInfo.ChunksNumber}, Status: {status} after {st.ElapsedMilliseconds}ms, {kBytesPerMS} MBytes/s" + Environment.NewLine;
         }
 
 
@@ -290,7 +316,7 @@ namespace WpfClientRest
                     Directory.CreateDirectory(pathName);
                     Dictionary<int, string> indexFileName = new Dictionary<int, string>();
 
-                    DownloadChunks(fileNameSelected, pathName, localClient);
+                    DownloadChunks(fileNameSelected, pathName);
 
                     await Task.Delay(100);
                 }

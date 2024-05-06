@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -17,6 +18,7 @@ namespace RestClientDll
 
     public class RestClient
     {
+        public RestSharp.RestClient Client { get => _client; }
         RestSharp.RestClient _client { get; set; } = null;
         CancellationTokenSource _tokenSc { get; set; } = new CancellationTokenSource();
         public int MaxTimeout { get; set; } = 10000;
@@ -58,10 +60,10 @@ namespace RestClientDll
         {
             string requestString = $"{controller}/{action}/{ids}";
 
-            return await DownloadRequest(requestString);
+            return await DownloadRequestAsync(requestString);
         }
 
-        public async Task<byte[]> DownloadRequest(string requestString)
+        public async Task<byte[]> DownloadRequestAsync(string requestString)
         {
             var request = new RestRequest(requestString);
             request.Timeout = 60;
@@ -71,6 +73,24 @@ namespace RestClientDll
                 return await _client.DownloadDataAsync(request, _tokenSc.Token);
             }
             catch(Exception e)
+            {
+                return default(byte[]);
+            }
+        }
+
+        public byte[] DownloadRequest(string requestString)
+        {
+            var request = new RestRequest(requestString);
+            request.Timeout = 60;
+
+            try
+            {
+                var stream = _client.DownloadStream(request);
+                var memoryS = new MemoryStream();
+                stream.CopyTo(memoryS, (int)stream.Length);
+                return memoryS.GetBuffer();
+            }
+            catch (Exception e)
             {
                 return default(byte[]);
             }

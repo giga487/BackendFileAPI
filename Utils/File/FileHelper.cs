@@ -181,7 +181,8 @@ namespace Utils.FileHelper
 
             FileStream fs = new FileStream(filePath, FileMode.CreateNew);
             fs.Seek(maxMadimension, SeekOrigin.Begin);
-            fs.WriteByte(0);
+
+            fs.WriteByte(1);
             fs.Close();
         }
 

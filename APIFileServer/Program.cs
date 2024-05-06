@@ -24,13 +24,13 @@ namespace APIFileServer
             // Add services to the container.
             //builder.Services.AddControllersWithViews();
 
-            long maxMem = (long)1024 * 1024 * 1024 * 4;
+            long maxMem = (long)1024 * 1024 * 50;
 
             RestAPIFileCache RestCache = new RestAPIFileCache(maxMem);
 
             Stopwatch st = new Stopwatch();
             st.Start();
-            RestAPIConfiguration restConf = new RestAPIConfiguration(builder.Configuration).CreateFileList().MakeChunksFiles().FillCache(RestCache);
+            RestAPIConfiguration restConf = new RestAPIConfiguration(builder.Configuration).CreateFileList().MakeChunksFiles();//.FillCache(RestCache);
             st.Stop();
             Console.WriteLine($"Size list {restConf.FileList.TotalFileSize} bytes, {st.ElapsedMilliseconds}ms");
 
