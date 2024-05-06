@@ -41,8 +41,6 @@ namespace APIFileServer
                 throw new FileNotFoundException(restConf.SharedFilePath);
             }
 
-
-
             var physicalProvider = new PhysicalFileProvider(restConf.PhysicalFileRoot);
 
             builder.Services.AddSingleton<IFileProvider>(physicalProvider);
@@ -70,7 +68,7 @@ namespace APIFileServer
             });
 
             // Add services to the container.
-
+            builder.WebHost.UseKestrel(x => { x.Limits.MaxConcurrentConnections = 1000; });
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
