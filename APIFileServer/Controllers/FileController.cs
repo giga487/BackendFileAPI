@@ -123,12 +123,21 @@ namespace APIFileServer.Controllers
                             using (MemoryStream memoryStream = new MemoryStream())
                             {
                                 stream.CopyTo(memoryStream, (int)stream.Length);
-                                _memoryCache.AddMemory(objToSend.Filename, memoryStream.GetBuffer());
+                                if (_memoryCache.AddMemory(objToSend.Filename, memoryStream.GetBuffer()))
+                                {
+                                    _memoryCache.Get(objToSend.Filename, out memoryBuffer);
+                                }
+                                else
+                                {
+                                    memoryBuffer = memoryStream.GetBuffer(); //qui ci entro se l'aggiunta alla cache fallisce
+                                }
                             }
                         }
                     }
-
-                    _memoryCache.Get(objToSend.Filename, out memoryBuffer);
+                    else
+                    {
+                        _memoryCache.Get(objToSend.Filename, out memoryBuffer);
+                    }
 
                     if (memoryBuffer != null)
                     {

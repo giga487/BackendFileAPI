@@ -168,7 +168,8 @@ namespace WpfClientRest
                 //Task.Run(async () =>
                 //{
                 string requestString = $"/api/File/DownloadFileByChunks?fileName={fileNameSelected}&Id={i}";
-                byte[] file = client.DownloadRequest(requestString);
+                var request = new RestSharp.RestRequest(requestString, Method.Get);
+                var file = client.Client.DownloadData(request);
 
                 FileInfo f = new FileInfo(fileNameSelected);
 

@@ -4,9 +4,10 @@
     {
         public class MemoryItem
         {
+            public readonly int MinimumTimeInCache = 20;
             public byte[]? MemoryDump { get; set; } = null;
-            public DateTime DateTime { get; set; } = DateTime.Now;
-
+            public DateTime DateTime { get; set; } = DateTime.Now; 
+            public DateTime ElapsedTime { get => DateTime.AddSeconds(MinimumTimeInCache); }
             public MemoryItem(byte[] stream)
             { 
                 MemoryDump = new byte[stream.Length];
@@ -47,7 +48,10 @@
 
             while (size > MaxMemory - MemorySize || MemorySize < 0)
             {
-                RemoveOldest();
+                if (!RemoveOldest())
+                {
+                    return false; //allora devo fornire il dato senza cache
+                }
             }
 
             try
@@ -79,16 +83,23 @@
             return false;
         }
 
-        public void RemoveOldest()
+        public bool RemoveOldest()
         {
             if (Memory == null || Memory.Count == 0)
-                return;
+                return false;
 
             var oldest = Memory.MinBy(x => x.Value.DateTime);
+
+            if (oldest.Value.ElapsedTime < DateTime.Now)
+            {
+                return false; // non posso eliminarla
+            }
             MemorySize -= oldest.Value.MemoryDump.Length;
 
             Console.WriteLine($"Removed from cache {oldest.Key}");
             Memory.Remove(oldest.Key);
+
+            return true;
         }
 
     }

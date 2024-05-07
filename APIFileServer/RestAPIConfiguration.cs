@@ -21,6 +21,7 @@ namespace APIFileServer
         public bool ChunksIsOK { get; private set; } = true;
         public int MaxChunkSize { get; private set; } = 50 * 1024;
         public string PhysicalFileRoot { get; private set; } = string.Empty;
+        public int MaxCacheRam { get; private set; } = 500*1024*1024;
         public RestAPIConfiguration(ConfigurationManager config)
         {
             var sharedFileConf = config.GetSection("SharedFile");
@@ -64,6 +65,8 @@ namespace APIFileServer
             {
                 MaxChunkSize = sharedFileConf.GetValue<int>("MaxChunkSize");
             }
+
+            MaxCacheRam = sharedFileConf.GetValue<int>("MaxCacheRam");
 
             var jwtConfig = config.GetSection("JWTSecureData");
 
