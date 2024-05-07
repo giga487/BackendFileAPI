@@ -4,7 +4,7 @@
     {
         public class MemoryItem
         {
-            public readonly int MinimumTimeInCache = 20;
+            public readonly int MinimumTimeInCache = 2;
             public byte[]? MemoryDump { get; set; } = null;
             public DateTime DateTime { get; set; } = DateTime.Now; 
             public DateTime ElapsedTime { get => DateTime.AddSeconds(MinimumTimeInCache); }
@@ -90,7 +90,7 @@
 
             var oldest = Memory.MinBy(x => x.Value.DateTime);
 
-            if (oldest.Value.ElapsedTime < DateTime.Now)
+            if (oldest.Value.ElapsedTime > DateTime.Now)
             {
                 return false; // non posso eliminarla
             }

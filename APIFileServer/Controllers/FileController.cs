@@ -125,17 +125,20 @@ namespace APIFileServer.Controllers
                                 stream.CopyTo(memoryStream, (int)stream.Length);
                                 if (_memoryCache.AddMemory(objToSend.Filename, memoryStream.GetBuffer()))
                                 {
+                                    Console.WriteLine($"inserted in cache {objToSend.Filename}");
                                     _memoryCache.Get(objToSend.Filename, out memoryBuffer);
                                 }
                                 else
                                 {
-                                    memoryBuffer = memoryStream.GetBuffer(); //qui ci entro se l'aggiunta alla cache fallisce
+                                    Console.WriteLine($"---- taken by hdd {objToSend.Filename}");
+                                    memoryBuffer = memoryStream.GetBuffer(); //if the data is not written in cache
                                 }
                             }
                         }
                     }
                     else
                     {
+                        Console.WriteLine($"taken by cache {objToSend.Filename}");
                         _memoryCache.Get(objToSend.Filename, out memoryBuffer);
                     }
 

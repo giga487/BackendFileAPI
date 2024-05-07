@@ -319,7 +319,7 @@ namespace WpfClientRest
 
                     DownloadChunks(fileNameSelected, pathName);
 
-                    await Task.Delay(100);
+                    await Task.Delay(1500);
                 }
                 catch(Exception ex)
                 {
