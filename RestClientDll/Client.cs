@@ -33,8 +33,8 @@ namespace RestClientDll
 
         public class DownloadResult
         {
-            public Result Result { get; private set; } = Result.Unknown;
-            public int Size { get; private set; } = 0;
+            public Result Result { get; set; } = Result.Unknown;
+            public int Size { get; set; } = 0;
 
             public DownloadResult(Result result, int size = 0)
             {
@@ -165,34 +165,38 @@ namespace RestClientDll
             }
         }
 
-        public Result ChunkTest(List<int> originalIndexes, Dictionary<int, RestClientDll.RestClient.Result> chunksResult)
+        public DownloadResult ChunkTest(List<int> originalIndexes, Dictionary<int, RestClientDll.RestClient.DownloadResult> chunksResult)
         {
-            Result finalChunksResult = Result.Ok;
+            DownloadResult finalChunksResult = new DownloadResult(Result.Ok);
 
             foreach (var index in originalIndexes)
             {
                 if(chunksResult.TryGetValue(index, out var result))
                 {
-                    if (result != Result.Ok)
+                    if (result.Result != Result.Ok)
                     {
-                        finalChunksResult = result;
+                        finalChunksResult = new DownloadResult(result.Result);
+                    }
+                    else
+                    {
+                        finalChunksResult.Size += result.Size;
                     }
                 }
                 else
                 {
-                    finalChunksResult = Result.Bad;
+                    finalChunksResult = new DownloadResult(Result.Bad);
                 }
             }
 
             return finalChunksResult;
         }
 
-        public async Task<Result> DownloadChunksByIndexes(string apiChunks, List<int> chunksIds, string filenameToDownload, string path = "", int maxTry = 5)
+        public async Task<DownloadResult> DownloadChunksByIndexes(string apiChunks, List<int> chunksIds, string filenameToDownload, string path = "", int maxTry = 5)
         {
             double percentage = 0;
             //string address = "/api/File/DownloadFileByChunks?fileName={0}&Id={1}";
             string address = apiChunks;
-            Dictionary<int, RestClientDll.RestClient.Result> ChunksResult = new Dictionary<int, Result>();
+            Dictionary<int, DownloadResult> ChunksResult = new Dictionary<int, DownloadResult>();
 
             List<int> chunksIdsCopy = chunksIds.ToList();
             foreach (var t in chunksIdsCopy.ToList())
@@ -202,7 +206,7 @@ namespace RestClientDll
 
                 if (downloadStatus.Result == Result.Ok)
                 {
-                    ChunksResult[t] = downloadStatus.Result;
+                    ChunksResult[t] = downloadStatus;
                     chunksIdsCopy.Remove(t);
                 }
             }
@@ -222,7 +226,7 @@ namespace RestClientDll
 
                 for (int downloadTry = 0; downloadTry < maxTry; downloadTry++)
                 {
-                    var downloadStatus = await DownloadChunk(address, filenameToDownload, i);
+                    var downloadStatus = await DownloadChunk(address, filenameToDownload, i, path);
                     OnDownloadedFileResult(new ChunkDowloadArgs(i, filenameToDownload, downloadStatus, downloadTry));
 
                     if (downloadStatus.Result == Result.Ok)
