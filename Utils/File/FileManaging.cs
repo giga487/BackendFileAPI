@@ -47,6 +47,17 @@ namespace Utils.FileHelper
                 return ChunksList;
             }
 
+            public static FileInfo CreateFileFromChunks(List<ApiFileInfo> listOfChunks, string path)
+            {
+                
+
+
+
+
+                return null;
+            }
+
+
             public static List<ApiFileInfo> CreateChunks(string filename, string whereToPut, int maxLengthByte)
             {
                 List<ApiFileInfo> chunks = new List<ApiFileInfo>();
@@ -74,29 +85,32 @@ namespace Utils.FileHelper
 
                 if (f.Length > maxLengthByte)
                 {
-                    byte[] buffer = new byte[maxLengthByte];
+
 
                     using (Stream input = File.OpenRead(filename))
                     {
                         int index = 0;
+                        int remaining = (int)input.Length;
 
                         while (input.Position < input.Length)
                         {
                             string newfile = Path.Combine(newFolder, $"{fileBaseName}_{index}{f.Extension}");
 
-                            int remaining = maxLengthByte;
-                            var bytesRead = input.Read(buffer, 0, Math.Min(remaining, maxLengthByte));
+                            int sizeToCopy = Math.Min(remaining, maxLengthByte);
+                            byte[] buffer = new byte[sizeToCopy];
+
+                            var bytesRead = input.Read(buffer, 0, sizeToCopy);
                             string md5New = Md5Result(buffer);
 
                             if (!File.Exists(newfile)) //forse esiste gia il chunk
                             {
                                 using (Stream output = File.Create(newfile))
                                 {
-                                    while (remaining > 0 && bytesRead > 0)
-                                    {
+                                    //while (remaining > 0 && bytesRead > 0)
+                                    //{
                                         output.Write(buffer, 0, bytesRead);
                                         remaining -= bytesRead;
-                                    }
+                                    //}
                                 }
                             }
                             else
