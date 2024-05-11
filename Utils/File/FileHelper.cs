@@ -33,7 +33,7 @@ namespace Utils.FileHelper
             return md5Result;
         }
 
-        public async static Task MakeFile(byte[] bytes, string path, string filename, bool overwrite)
+        public async static Task<bool> MakeFile(byte[] bytes, string path, string filename, bool overwrite)
         {
             try
             {
@@ -41,7 +41,7 @@ namespace Utils.FileHelper
 
                 if (overwrite && File.Exists(filename))
                 {
-                    return;
+                    return false;
                 }
 
                 if (!Directory.Exists(path))
@@ -51,18 +51,32 @@ namespace Utils.FileHelper
 
                 if (bytes is null)
                 {
-                    return;
+                    return false;
                 }
 
-                await Task.Run(() =>
+                return await Task.Run(() => 
                 {
-                    File.WriteAllBytes(fileName, bytes);
+                    return CreateFile(fileName, bytes);
                 });
             }
             catch
             {
-
+                return false;
             }
+
+            return false;
+        }
+
+        public static bool CreateFile(string fileName, byte[] bytes)
+        {
+            File.WriteAllBytes(fileName, bytes);
+
+            if (File.Exists(fileName))
+            {
+                return true;
+            }
+
+            return false;
         }
 
         public async static Task MakeFile(Stream fileStream, string path, string filename, bool overwrite)
