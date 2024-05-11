@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -31,11 +32,20 @@ namespace RestClientDll
             FileSaveException
         }
 
+        public class DownloadChunksResult
+        {
+            public List<DownloadResult> Chunks { get; set; } = new List<DownloadResult>();
+            public Result Result { get; set; } = Result.Unknown;
+            public int Size { get; set; } = 0;
+        }
+
         public class DownloadResult
         {
             public Result Result { get; set; } = Result.Unknown;
             public int Size { get; set; } = 0;
-
+            public string FileName { get; set; } = string.Empty;
+            public long Milliseconds { get; set; } = 0;
+            public FileInfo FileInfo { get; set; } = null;
             public DownloadResult(Result result, int size = 0)
             {
                 Result = result;
@@ -45,27 +55,19 @@ namespace RestClientDll
 
         public class ChunkDowloadArgs : EventArgs
         {
-            public Result Result { get; set; } = Result.Unknown;
             public int ID { get; private set; } = -1;
             public string Name { get; private set; } = string.Empty;
             public int Try { get; private set; } = 0;
-            public int Size { get; private set; } = 0;
-            public ChunkDowloadArgs(int id, string filename, Result result, int size, int downloadtry = 0)
-            {
-                ID = id;
-                Name = filename;
-                Result = result;
-            }
+            public DownloadResult ResultData { get; set; } = null;
 
-            public ChunkDowloadArgs(int id, string filename, DownloadResult result, int downloadtry = 0)
+            public ChunkDowloadArgs(int id, DownloadResult result, int downloadtry = 0)
             {
                 ID = id;
-                Name = filename;
+                Name = result.FileName;
 
                 if(result != null)
                 {
-                    Result = result.Result;
-                    Size = result.Size;
+                    ResultData = result;
                 }
             }
         }
@@ -121,7 +123,6 @@ namespace RestClientDll
 
         public async Task<DownloadResult> DownloadChunk(string apiChunks, string filenameToDownload, int index, string path = "")
         {
-            double percentage = 0;
 
             string address = apiChunks;
 
@@ -129,27 +130,41 @@ namespace RestClientDll
             var request = new RestSharp.RestRequest(requestString, Method.Get);
             var fileData = _client.DownloadData(request);
 
+            Stopwatch st = new Stopwatch();
             FileInfo f = new FileInfo(filenameToDownload);
 
-            DownloadResult result = null;
-
+            st.Start();
             try
             {
                 if (fileData != null)
                 {
                     string filename = $"{f.Name.Replace(f.Extension, "")}_{index}{f.Extension}";
-                    if (await FileHelper.MakeFile(fileData, path, filename, true))
+                    st.Stop();
+
+                    FileInfo made = await FileHelper.MakeFile(fileData, path, filename, true);
+
+                    if(made != null)
                     {
-                        return new DownloadResult(Result.Ok, fileData.Length);
+                        return new DownloadResult(Result.Ok, fileData.Length)
+                        {
+                            Milliseconds = st.ElapsedMilliseconds,
+                            FileName = filename,
+                            FileInfo = made
+                        };
                     }
                 }
             }
             catch(Exception ex)
             {
-                switch(ex.GetType())
+                st.Stop();
+
+                switch (ex.GetType())
                 {
                     default:
-                        return new DownloadResult(Result.FileSaveException);
+                        return new DownloadResult(Result.FileSaveException)
+                        {
+                            Milliseconds = st.ElapsedMilliseconds
+                        };
                 }
             }
 
@@ -165,33 +180,34 @@ namespace RestClientDll
             }
         }
 
-        public DownloadResult ChunkTest(List<int> originalIndexes, Dictionary<int, RestClientDll.RestClient.DownloadResult> chunksResult)
+        public DownloadChunksResult ChunkTest(List<int> originalIndexes, Dictionary<int, RestClientDll.RestClient.DownloadResult> chunksResult)
         {
-            DownloadResult finalChunksResult = new DownloadResult(Result.Ok);
+            DownloadChunksResult finalChunksResult = new DownloadChunksResult();
 
             foreach (var index in originalIndexes)
             {
                 if(chunksResult.TryGetValue(index, out var result))
                 {
-                    if (result.Result != Result.Ok)
-                    {
-                        finalChunksResult = new DownloadResult(result.Result);
-                    }
-                    else
+                    if (result.Result == Result.Ok)
                     {
                         finalChunksResult.Size += result.Size;
+                        finalChunksResult.Chunks.Add(result);
                     }
-                }
-                else
-                {
-                    finalChunksResult = new DownloadResult(Result.Bad);
+
+                    finalChunksResult.Result = result.Result;
                 }
             }
 
             return finalChunksResult;
         }
 
-        public async Task<DownloadResult> DownloadChunksByIndexes(string apiChunks, List<int> chunksIds, string filenameToDownload, string path = "", int maxTry = 5)
+        public async Task<FileInfo> MakeFileFromChunks(DownloadChunksResult chunksResult)
+        {
+
+            return await Task.FromResult(default(FileInfo));
+        }
+
+        public async Task<DownloadChunksResult> DownloadChunksByIndexes(string apiChunks, List<int> chunksIds, string filenameToDownload, string path = "", int maxTry = 5)
         {
             double percentage = 0;
             //string address = "/api/File/DownloadFileByChunks?fileName={0}&Id={1}";
@@ -202,7 +218,7 @@ namespace RestClientDll
             foreach (var t in chunksIdsCopy.ToList())
             {
                 var downloadStatus = await DownloadChunk(address, filenameToDownload, t, path);
-                OnDownloadedFileResult(new ChunkDowloadArgs(t, filenameToDownload, downloadStatus));
+                OnDownloadedFileResult(new ChunkDowloadArgs(t, downloadStatus));
 
                 if (downloadStatus.Result == Result.Ok)
                 {
@@ -215,29 +231,16 @@ namespace RestClientDll
         }
 
         public int TimeToTryAgain_MS => 50;
-        public async void DownloadChunks(string apiChunks, int chunkNumber, string filenameToDownload, string path = "", int maxTry = 5)
+        public async Task<DownloadChunksResult> DownloadChunks(string apiChunks, int chunkNumber, string filenameToDownload, string path = "", int maxTry = 5)
         {
-            double percentage = 0;
-            //string address = "/api/File/DownloadFileByChunks?fileName={0}&Id={1}";
-            string address = apiChunks;
+            List<int> chunks = new List<int>();
+
             for (int i = 0; i < chunkNumber; i++)
             {
-                percentage = (double)i / chunkNumber * 100;
-
-                for (int downloadTry = 0; downloadTry < maxTry; downloadTry++)
-                {
-                    var downloadStatus = await DownloadChunk(address, filenameToDownload, i, path);
-                    OnDownloadedFileResult(new ChunkDowloadArgs(i, filenameToDownload, downloadStatus, downloadTry));
-
-                    if (downloadStatus.Result == Result.Ok)
-                        break;
-                    else
-                    { 
-                        await Task.Delay(TimeToTryAgain_MS);
-                        continue;
-                    }
-                }
+                chunks.Add(i);
             }
+
+            return await DownloadChunksByIndexes(apiChunks, chunks, filenameToDownload, path, maxTry);
         }
 
         public async Task<byte[]> DownloadRequestAsync(string requestString)
@@ -253,8 +256,6 @@ namespace RestClientDll
             {
                 return default(byte[]);
             }
-
-
         }
 
         public byte[] DownloadRequest(string requestString)

@@ -53,9 +53,9 @@ namespace WpfClientRest
         {
             Dispatcher.Invoke(() =>
             {
-                if (e.Result == RestClientDll.RestClient.Result.Ok)
+                if (e.ResultData.Result == RestClientDll.RestClient.Result.Ok)
                 {
-                    //resultTxtBox.Text += $"D: {e.Name}, {e.ID} => {e.Result.ToString()}, {e.Try}" + Environment.NewLine;
+                    resultTxtBox.Text += $"D: {e.Name}, {e.ID} => {e.ResultData.Size}, {e.Try}" + Environment.NewLine;
                 }
                 else
                 {
@@ -234,9 +234,9 @@ namespace WpfClientRest
             bool[] chunks = new bool[apiFileInfo.ChunksNumber];
 
             int downloadedValue = 0;
-            DownloadResult operationResult = new DownloadResult(Result.Unknown);
+            DownloadChunksResult operationResult = new DownloadChunksResult();
 
-            operationResult = await Task<DownloadResult>.Run(async () =>
+            operationResult = await Task<DownloadChunksResult>.Run(async () =>
             {
                 //var result = await localClient.CreateRequest<List<ApiFileInfo>>(RestClientDll.RestRequestType.Get, "api/File", "List");
                 
@@ -251,7 +251,6 @@ namespace WpfClientRest
 
                 int cycle = 0;
 
-
                 while (true)
                 {
                     if (chucksToDo.Count == 0)
@@ -264,15 +263,10 @@ namespace WpfClientRest
 
                     string address = "/api/File/DownloadFileByChunks?fileName={0}&Id={1}";
 
-                    DownloadResult toRet = null;
-
-                    if ((toRet = await client.DownloadChunksByIndexes(address, chucksToDo, fileNameSelected, path: pathName)).Result == RestClientDll.RestClient.Result.Ok)
-                    {
-                        return toRet;
-                    }
+                    return await client.DownloadChunksByIndexes(address, chucksToDo, fileNameSelected, path: pathName);
                 }
 
-                return new DownloadResult(Result.Unknown);
+                return null;
             });
 
             bool status = true;
@@ -320,7 +314,7 @@ namespace WpfClientRest
                     Directory.CreateDirectory(pathName);
                     Dictionary<int, string> indexFileName = new Dictionary<int, string>();
 
-                    DownloadChunks(fileNameSelected, pathName);
+                    await DownloadChunks(fileNameSelected, pathName);
 
                     await Task.Delay(1500);
                 }
@@ -329,6 +323,27 @@ namespace WpfClientRest
                     resultTxtBox.Text += $"{ex.Message}" + Environment.NewLine;
 
                 }
+            }
+        }
+
+        private async void downloadByChunksFileBtn_Click(object sender, RoutedEventArgs e)
+        {
+            string fileNameSelected = (string)fileCombobox.SelectedItem;
+            var apiFileInfo = Dict[fileNameSelected];
+
+            double percentage = 0;
+
+            Stopwatch st = new Stopwatch();
+            st.Start();
+
+            string address = "/api/File/DownloadFileByChunks?fileName={0}&Id={1}";
+            var result = await client.DownloadChunks(address, apiFileInfo.ChunksNumber, fileNameSelected, path: "Test");
+
+            st.Stop();
+
+            foreach( var chunk in result.Chunks)
+            {
+                resultTxtBox.Text += $"Downloaded: {chunk.FileInfo.FullName} in {chunk.Milliseconds}ms {chunk.Size}, " + Environment.NewLine;
             }
         }
     }

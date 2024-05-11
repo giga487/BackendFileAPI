@@ -30,6 +30,7 @@
             <ListBox x:Name="itembox" Margin="10,72,229,48"/>
             <Button x:Name="DownloadStressTestBtn" Content="Stress Test" HorizontalAlignment="Left" Margin="10,15,0,0" VerticalAlignment="Top" Width="120" Height="22" Grid.Row="1" Click="DownloadStressTestBtn_Click"/>
             <TextBox x:Name="howMuchStressTxtbox" TextAlignment="Center" HorizontalAlignment="Left" Margin="148,19,0,0" Grid.Row="1" TextWrapping="Wrap" Text="10" VerticalAlignment="Top" Width="58"/>
+            <Button x:Name="downloadByChunksFileBtn" Content="Get File Chunks" HorizontalAlignment="Left" Margin="148,124,0,0" VerticalAlignment="Top" Width="115" Height="22" Click="downloadByChunksFileBtn_Click"/>
         </Grid>
         <Grid HorizontalAlignment="Center" Height="55" VerticalAlignment="Center" Width="359">
             <Button x:Name="createUriBtn" Content="Make Uri" HorizontalAlignment="Left" Margin="290,9,0,0" VerticalAlignment="Top" Width="59" Height="20" Click="createUriBtn_Click"/>
