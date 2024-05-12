@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -46,10 +47,12 @@ namespace RestClientDll
             public string FileName { get; set; } = string.Empty;
             public long Milliseconds { get; set; } = 0;
             public FileInfo FileInfo { get; set; } = null;
-            public DownloadResult(Result result, int size = 0)
+            public int Index { get; set; } = 0;
+            public DownloadResult(Result result, int index, int size = 0)
             {
                 Result = result;
                 Size = size;
+                Index = index;
             }
         }
 
@@ -123,10 +126,7 @@ namespace RestClientDll
 
         public async Task<DownloadResult> DownloadChunk(string apiChunks, string filenameToDownload, int index, string path = "")
         {
-
-            string address = apiChunks;
-
-            string requestString = DownloadChunkRequest(address, filenameToDownload, index);
+            string requestString = DownloadChunkRequest(apiChunks, filenameToDownload, index);
             var request = new RestSharp.RestRequest(requestString, Method.Get);
             var fileData = _client.DownloadData(request);
 
@@ -145,11 +145,12 @@ namespace RestClientDll
 
                     if(made != null)
                     {
-                        return new DownloadResult(Result.Ok, fileData.Length)
+                        return new DownloadResult(Result.Ok, index, size: fileData.Length)
                         {
                             Milliseconds = st.ElapsedMilliseconds,
                             FileName = filename,
-                            FileInfo = made
+                            FileInfo = made,
+                            Index = index
                         };
                     }
                 }
@@ -161,14 +162,14 @@ namespace RestClientDll
                 switch (ex.GetType())
                 {
                     default:
-                        return new DownloadResult(Result.FileSaveException)
+                        return new DownloadResult(Result.FileSaveException, index)
                         {
                             Milliseconds = st.ElapsedMilliseconds
                         };
                 }
             }
 
-            return new DownloadResult(Result.Bad);
+            return new DownloadResult(Result.Bad, index);
         }
 
         private void OnDownloadedFileResult(ChunkDowloadArgs args)
@@ -211,13 +212,12 @@ namespace RestClientDll
         {
             double percentage = 0;
             //string address = "/api/File/DownloadFileByChunks?fileName={0}&Id={1}";
-            string address = apiChunks;
             Dictionary<int, DownloadResult> ChunksResult = new Dictionary<int, DownloadResult>();
 
             List<int> chunksIdsCopy = chunksIds.ToList();
             foreach (var t in chunksIdsCopy.ToList())
             {
-                var downloadStatus = await DownloadChunk(address, filenameToDownload, t, path);
+                var downloadStatus = await DownloadChunk(apiChunks, filenameToDownload, t, path);
                 OnDownloadedFileResult(new ChunkDowloadArgs(t, downloadStatus));
 
                 if (downloadStatus.Result == Result.Ok)
@@ -242,6 +242,54 @@ namespace RestClientDll
 
             return await DownloadChunksByIndexes(apiChunks, chunks, filenameToDownload, path, maxTry);
         }
+
+        public async Task<bool> GetFileByChunks(string apiChunks, int chunkNumber, string oldMd5, string filenameToDownload, string path = "", int maxTry = 5)
+        {
+            var downloads = await DownloadChunks(apiChunks, chunkNumber, filenameToDownload, path, maxTry);
+
+            if (downloads.Result == Result.Ok)
+            {
+                Dictionary<int, byte[]> chunks = new Dictionary<int, byte[]>();
+
+                int position = 0;
+                string newFileName = Path.Combine(path, filenameToDownload);
+
+                try
+                {
+                    using (var fileToCreate = new FileStream(newFileName, FileMode.OpenOrCreate, FileAccess.Write))
+                    {
+                        foreach (var downloadedChunk in downloads.Chunks.OrderBy(t => t.Index))
+                        {
+                            chunks[downloadedChunk.Index] = new byte[255];
+                            //chunks
+
+                            using (var fs = new FileStream(downloadedChunk.FileInfo.FullName, FileMode.Open, FileAccess.Read))
+                            {
+                                byte[] bytes = new byte[downloadedChunk.FileInfo.Length];
+                                var bytesToAddAtPosition = fs.Read(bytes, 0, (int)downloadedChunk.FileInfo.Length);
+                                fileToCreate.Write(bytes, 0, downloadedChunk.Size);
+
+                                position += bytesToAddAtPosition;
+                                fs.Close();
+                            }
+                        }
+                    }
+
+                    if (FileHelper.Md5Result(newFileName) != oldMd5)
+                    {
+                        return false;
+                    }
+
+                }
+                catch
+                {
+
+                }
+            }
+
+            return true;
+        }
+
 
         public async Task<byte[]> DownloadRequestAsync(string requestString)
         {

@@ -331,20 +331,18 @@ namespace WpfClientRest
             string fileNameSelected = (string)fileCombobox.SelectedItem;
             var apiFileInfo = Dict[fileNameSelected];
 
-            double percentage = 0;
-
             Stopwatch st = new Stopwatch();
             st.Start();
 
             string address = "/api/File/DownloadFileByChunks?fileName={0}&Id={1}";
-            var result = await client.DownloadChunks(address, apiFileInfo.ChunksNumber, fileNameSelected, path: "Test");
+            var result = await client.GetFileByChunks(address, apiFileInfo.ChunksNumber, apiFileInfo.MD5, fileNameSelected, path: "Test");
 
             st.Stop();
 
-            foreach( var chunk in result.Chunks)
-            {
-                resultTxtBox.Text += $"Downloaded: {chunk.FileInfo.FullName} in {chunk.Milliseconds}ms {chunk.Size}, " + Environment.NewLine;
-            }
+            //foreach( var chunk in result.Chunks)
+            //{
+            //    resultTxtBox.Text += $"Downloaded: {chunk.FileInfo.FullName} in {chunk.Milliseconds}ms {chunk.Size}, " + Environment.NewLine;
+            //}
         }
     }
 }

@@ -33,13 +33,13 @@ namespace Utils.FileHelper
             return md5Result;
         }
 
-        public async static Task<FileInfo> MakeFile(byte[] bytes, string path, string filename, bool overwrite)
+        public async static Task<FileInfo> MakeFile(byte[] bytes, string path, string file, bool overwrite)
         {
             try
             {
-                string fileName = Path.Combine(path, filename);
+                string fileName = Path.Combine(path, file);
 
-                if (overwrite && File.Exists(filename))
+                if (overwrite && File.Exists(file))
                 {
                     return null;
                 }
@@ -58,7 +58,7 @@ namespace Utils.FileHelper
                 {
                     if(CreateFile(fileName, bytes))
                     {
-                        return new FileInfo(filename);
+                        return new FileInfo(fileName);
                     }
                     return null;
                 });
