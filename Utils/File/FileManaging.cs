@@ -41,27 +41,29 @@ namespace Utils.FileHelper
 
             public List<ApiFileInfo> CreateChunks()
             {
-                ChunksList = CreateChunks(FileName, Where, MaxLengthByte);
+                ChunksList = CreateChunks(FileName, Where, MaxLengthByte, true);
                 Completed = true;
 
                 return ChunksList;
             }
 
-            public static FileInfo CreateFileFromChunks(List<ApiFileInfo> listOfChunks, string path)
-            {
-                
-
-
-
-
-                return null;
-            }
-
-
-            public static List<ApiFileInfo> CreateChunks(string filename, string whereToPut, int maxLengthByte)
+            public static List<ApiFileInfo> CreateChunks(string filename, string whereToPut, int maxLengthByte, bool compression = false)
             {
                 List<ApiFileInfo> chunks = new List<ApiFileInfo>();
+
+                long fileSize;
                 FileInfo f = new FileInfo(filename);
+
+                byte[] buffer;
+                if (compression)
+                {
+                    buffer = FileHelper.Compress(filename).Result;
+                    fileSize = buffer.LongLength;
+                }
+                else
+                {
+                    fileSize = f.Length;
+                }
 
                 string fileBaseName = string.Empty;
                 string modifiedName = string.Empty;
@@ -83,10 +85,8 @@ namespace Utils.FileHelper
                     Directory.CreateDirectory(newFolder);
                 }
 
-                if (f.Length > maxLengthByte)
+                if (fileSize > maxLengthByte)
                 {
-
-
                     using (Stream input = File.OpenRead(filename))
                     {
                         int index = 0;
@@ -97,7 +97,7 @@ namespace Utils.FileHelper
                             string newfile = Path.Combine(newFolder, $"{fileBaseName}_{index}{f.Extension}");
 
                             int sizeToCopy = Math.Min(remaining, maxLengthByte);
-                            byte[] buffer = new byte[sizeToCopy];
+                            buffer = new byte[sizeToCopy];
 
                             var bytesRead = input.Read(buffer, 0, sizeToCopy);
                             string md5New = Md5Result(buffer);

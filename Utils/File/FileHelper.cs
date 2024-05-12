@@ -1,13 +1,54 @@
 ﻿using System;
 using System.IO;
+using System.IO.Compression;
 using System.IO.Pipes;
+using System.Runtime.InteropServices.ComTypes;
 using System.Security.Cryptography;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Utils.FileHelper
 {
     public partial class FileHelper
     {
+        public async static Task<byte[]> Compress(string filename)
+        {
+            if (!File.Exists(filename))
+            {
+                return null;
+            }
+
+            using (FileStream fileStream = new FileStream(filename, FileMode.Open))
+            {
+                return await Compress(fileStream);
+            }
+        }
+
+        public async static Task<byte[]> Compress(Stream fileStream)
+        {
+            int length = (int)fileStream.Length;
+            byte[] buffer = new byte[length];
+            int bytesRead = fileStream.Read(buffer, 0, length);
+
+            using (MemoryStream originalMemoryStream = new MemoryStream())
+            {
+                using (var compressor = new GZipStream(originalMemoryStream, CompressionMode.Compress))
+                {
+                    try
+                    {
+                        compressor.Write(buffer, 0, buffer.Length);
+                        Console.WriteLine($"Original size{fileStream.Length} - {originalMemoryStream.GetBuffer().Length}");
+
+                        return originalMemoryStream.GetBuffer();
+                    }
+                    catch
+                    {
+                        return null;
+                    }
+                }
+            }
+        }
+
         public async static Task<string> Md5ResultAsync(string fileName)
         {
             string md5Result = string.Empty;
