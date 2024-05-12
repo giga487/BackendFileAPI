@@ -30,7 +30,8 @@ namespace RestClientDll
             Ok,
             Bad,
             Unknown,
-            FileSaveException
+            FileSaveException,
+            BadCompressioneResult
         }
 
         public class DownloadChunksResult
@@ -38,6 +39,19 @@ namespace RestClientDll
             public List<DownloadResult> Chunks { get; set; } = new List<DownloadResult>();
             public Result Result { get; set; } = Result.Unknown;
             public int Size { get; set; } = 0;
+            public string CompressedFileName { get; set; } = string.Empty;
+            public string FileName { get; set; } = string.Empty;
+
+            public DownloadChunksResult(DownloadChunksResult toCopy)
+            {
+                Chunks = toCopy.Chunks;
+                Result = toCopy.Result;
+                Size = toCopy.Size; 
+                CompressedFileName = toCopy.CompressedFileName;
+                FileName = toCopy.FileName;
+            }
+
+            public DownloadChunksResult() { }
         }
 
         public class DownloadResult
@@ -48,6 +62,7 @@ namespace RestClientDll
             public long Milliseconds { get; set; } = 0;
             public FileInfo FileInfo { get; set; } = null;
             public int Index { get; set; } = 0;
+
             public DownloadResult(Result result, int index, int size = 0)
             {
                 Result = result;
@@ -244,24 +259,27 @@ namespace RestClientDll
             return await DownloadChunksByIndexes(apiChunks, chunks, filenameToDownload, path, maxTry, isCompressed);
         }
 
-        public async Task<bool> GetFileByChunks(string apiChunks, ApiFileInfo apifile, string filenameToDownload, string path = "", int maxTry = 5)
+        public async Task<DownloadChunksResult> GetFileByChunks(string apiChunks, ApiFileInfo apifile, string filenameToDownload, string path = "", int maxTry = 5)
         {
             var downloads = await DownloadChunks(apiChunks, apifile.ChunksNumber, filenameToDownload, path, maxTry, apifile.IsCompressed);
 
+            string finalFileName = string.Empty;
+            string newFileName = string.Empty;
+
             if (downloads.Result == Result.Ok)
             {
-
                 int position = 0;
-                string newFileName = Path.Combine(path, filenameToDownload);
-                string finalFileName = Path.Combine(path, apifile.Filename);
+                newFileName = Path.Combine(path, filenameToDownload);
+                finalFileName = Path.Combine(path, apifile.Filename);
+
+                if (apifile.IsCompressed)
+                {
+                    Guid guid = Guid.NewGuid();
+                    newFileName = Path.Combine(path, guid.ToString());
+                }
 
                 try
                 {
-                    if (apifile.IsCompressed)
-                    {
-                        newFileName += "_compressed";
-                    }
-
                     using (var fileToCreate = new FileStream(newFileName, FileMode.OpenOrCreate, FileAccess.Write))
                     {
                         foreach (var downloadedChunk in downloads.Chunks.OrderBy(t => t.Index))
@@ -285,7 +303,10 @@ namespace RestClientDll
 
                     if (FileHelper.Md5Result(finalFileName) != apifile.MD5)
                     {
-                        return false;
+                        return new DownloadChunksResult(downloads)
+                        {
+                            Result = Result.BadCompressioneResult
+                        };
                     }
 
                 }
@@ -295,7 +316,13 @@ namespace RestClientDll
                 }
             }
 
-            return true;
+
+            return new DownloadChunksResult(downloads)
+            {
+                Result = Result.Ok,
+                CompressedFileName = newFileName,
+                FileName = finalFileName,
+            };
         }
 
 

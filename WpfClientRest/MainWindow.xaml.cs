@@ -335,7 +335,7 @@ namespace WpfClientRest
             st.Start();
 
             string address = "/api/File/DownloadFileByChunks?fileName={0}&Id={1}";
-            if (await client.GetFileByChunks(address, apiFileInfo, fileNameSelected, path: "Test"))
+            if((await client.GetFileByChunks(address, apiFileInfo, fileNameSelected, path: "Test")).Result == Result.Ok )
             {
                 st.Stop();
 
