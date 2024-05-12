@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -21,7 +22,7 @@ namespace Utils.FileHelper
             public ApiFileInfo OriginalFileInfo { get; private set; } = null;
             public FileInfo FileInfo { get; private set; } = null;
             public bool Completed { get; private set; } = false;
-            public ChunkFile(string originalFile, string whereToPutThese, int maxLengthByte)
+            public ChunkFile(string originalFile, string whereToPutThese, int maxLengthByte, bool compressed = false)
             {
                 if(!File.Exists(originalFile))
                 {
@@ -36,34 +37,133 @@ namespace Utils.FileHelper
                 FileName = originalFile;
                 MaxLengthByte = maxLengthByte;
 
-                CreateChunks();
+                CreateChunks(compressed);
             }
 
-            public List<ApiFileInfo> CreateChunks()
+            public List<ApiFileInfo> CreateChunks(bool compressed = false)
             {
-                ChunksList = CreateChunks(FileName, Where, MaxLengthByte, true);
+                if (compressed)
+                {
+                    ChunksList = CreateChunksCompressed(FileName, Where, MaxLengthByte);
+                    OriginalFileInfo.IsCompressed = true;
+                }
+                else
+                    ChunksList = CreateChunks(FileName, Where, MaxLengthByte);
+
                 Completed = true;
 
                 return ChunksList;
             }
 
-            public static List<ApiFileInfo> CreateChunks(string filename, string whereToPut, int maxLengthByte, bool compression = false)
+
+            public static List<ApiFileInfo> CreateChunksCompressed(string filename, string whereToPut, int maxLengthByte)
             {
                 List<ApiFileInfo> chunks = new List<ApiFileInfo>();
 
-                long fileSize;
                 FileInfo f = new FileInfo(filename);
 
-                byte[] buffer;
-                if (compression)
+                byte[] compressedFileBuffer = FileHelper.Compress(filename).Result;
+                int fileSize = compressedFileBuffer.Length;   
+
+                string fileBaseName = string.Empty;
+                string modifiedName = string.Empty;
+
+                if (f.Extension != "")
                 {
-                    buffer = FileHelper.Compress(filename).Result;
-                    fileSize = buffer.LongLength;
+                    fileBaseName = f.Name.Replace(f.Extension, "");
+                    modifiedName = $"{fileBaseName}_{f.Extension.Replace(".", "")}";
                 }
                 else
                 {
-                    fileSize = f.Length;
+                    modifiedName = $"{f.Name}_folder";
                 }
+
+                string newFolder = Path.Combine(whereToPut, modifiedName);
+
+                if (!Directory.Exists(newFolder))
+                {
+                    Directory.CreateDirectory(newFolder);
+                }
+
+                if (fileSize > maxLengthByte)
+                {
+                    int index = 0;
+                    int arrayChunksIndex = 0;
+                    int remaining = fileSize;
+
+                    while (arrayChunksIndex < fileSize)
+                    {
+                        string newfile = Path.Combine(newFolder, $"{fileBaseName}_{index}{f.Extension}");
+
+                        int sizeToCopy = Math.Min(remaining, maxLengthByte);
+                        byte[] buffer = new byte[sizeToCopy];
+
+                        Array.Copy(compressedFileBuffer, arrayChunksIndex, buffer, 0, sizeToCopy);
+                        string md5New = Md5Result(buffer);
+
+                        if(!File.Exists(newfile)) //forse esiste gia il chunk
+                        {
+                            using (Stream output = File.Create(newfile))
+                            {
+                                //while (remaining > 0 && bytesRead > 0)
+                                //{
+                                output.Write(buffer, 0, sizeToCopy);
+                                remaining -= sizeToCopy;
+                                //}
+                            }
+                        }
+                        //else
+                        //{
+                        //    string md5Old = Md5Result(newfile);
+
+                        //    if (md5Old != md5New)
+                        //    {
+                        //        using (Stream output = File.Create(newfile))
+                        //        {
+                        //            while (remaining > 0 && bytesRead > 0)
+                        //            {
+                        //                output.Write(buffer, 0, bytesRead);
+                        //                remaining -= bytesRead;
+                        //            }
+                        //        }
+                        //    }
+                        //    else
+                        //    {
+
+                        //    }
+                        //}
+
+                        arrayChunksIndex += sizeToCopy;
+                        index++;
+
+                        ApiFileInfo info = new ApiFileInfo(newfile, md5New, buffer.Length);
+                        chunks.Add(info);
+                    }
+                }
+                else
+                {
+                    FileInfo fInfo = new FileInfo(filename);
+                    string md5new = Md5Result(filename);
+                    ApiFileInfo info = new ApiFileInfo(filename, md5new, fInfo.Length);
+
+                    chunks.Add(info);
+                }
+
+                return chunks;
+            }
+
+
+
+
+            public static List<ApiFileInfo> CreateChunks(string filename, string whereToPut, int maxLengthByte)
+            {
+                List<ApiFileInfo> chunks = new List<ApiFileInfo>();
+
+                FileInfo f = new FileInfo(filename);
+
+                byte[] buffer;
+
+                long fileSize = f.Length;
 
                 string fileBaseName = string.Empty;
                 string modifiedName = string.Empty;

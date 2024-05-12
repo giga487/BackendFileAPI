@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.IO.Pipes;
@@ -32,12 +33,12 @@ namespace Utils.FileHelper
 
             using (MemoryStream originalMemoryStream = new MemoryStream())
             {
-                using (var compressor = new GZipStream(originalMemoryStream, CompressionMode.Compress))
+                using (var compressor = new GZipStream(originalMemoryStream, mode: CompressionMode.Compress))
                 {
                     try
                     {
                         compressor.Write(buffer, 0, buffer.Length);
-                        Console.WriteLine($"Original size{fileStream.Length} - {originalMemoryStream.GetBuffer().Length}");
+                        //Console.WriteLine($"Original size{fileStream.Length} - {originalMemoryStream.GetBuffer().Length}");
 
                         return originalMemoryStream.GetBuffer();
                     }
@@ -45,6 +46,65 @@ namespace Utils.FileHelper
                     {
                         return null;
                     }
+                }
+            }
+        }
+
+        public static void DecompressFileToFile(string compressedFileName, string filename)
+        {
+            using (FileStream originalFileStream = new FileStream(compressedFileName, FileMode.Open))
+            {
+                using (FileStream decompressedFileStream = File.Create(filename))
+                {
+                    using (GZipStream decompressionStream = new GZipStream(originalFileStream, CompressionMode.Decompress))
+                    {
+                        decompressionStream.CopyTo(decompressedFileStream);
+                    }
+                }
+            }
+        }
+
+        public static void DecompressToFile(byte[] byteDecompressed, string filename)
+        {
+            using (MemoryStream originalFileStream = new MemoryStream(byteDecompressed))
+            {
+                using (FileStream decompressedFileStream = File.Create(filename))
+                {
+                    using (GZipStream decompressionStream = new GZipStream(originalFileStream, CompressionMode.Decompress))
+                    {
+                        decompressionStream.CopyTo(decompressedFileStream);
+                    }
+                }
+            }
+        }
+
+        public bool CheckBetweenCompressedbyte(byte[] compressed, byte[] decompressed)
+        {
+            string md5 = FileHelper.Md5Result(compressed);
+            string md5ToCheck = FileHelper.Md5Result(decompressed);
+
+            if (string.Compare(md5, md5ToCheck) == 0)
+                return true;
+
+            return false;
+        }
+
+        public async static Task<byte[]> Decompress(byte[] compressedArray)
+        {
+            byte[] result = null;
+
+            MemoryStream decompressedMS = new MemoryStream();
+
+            using (MemoryStream originalMemoryStream = new MemoryStream(compressedArray))
+            {
+                using (GZipStream decompressionStream = new GZipStream(originalMemoryStream, CompressionMode.Decompress))
+                {
+                    decompressionStream.CopyTo(decompressedMS);
+                    byte[] bytysDecompressed = new byte[decompressedMS.Length];
+
+                    Array.Copy(decompressedMS.GetBuffer(), bytysDecompressed, decompressedMS.Length);
+
+                    return bytysDecompressed;
                 }
             }
         }
@@ -108,8 +168,6 @@ namespace Utils.FileHelper
             {
                 return null;
             }
-
-            return null;
         }
 
         public static bool CreateFile(string fileName, byte[] bytes)
@@ -138,7 +196,7 @@ namespace Utils.FileHelper
                 using (FileStream writeStream = new FileStream(fileName, FileMode.Create, FileAccess.Write))
                 {
                     int length = (int)fileStream.Length;
-                    Byte[] buffer = new Byte[length];
+                    byte[] buffer = new byte[length];
                     int bytesRead = fileStream.Read(buffer, 0, length);
 
                     while (bytesRead > 0)

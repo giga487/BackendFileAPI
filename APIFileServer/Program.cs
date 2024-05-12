@@ -21,9 +21,6 @@ namespace APIFileServer
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
-            //builder.Services.AddControllersWithViews();
-
             Stopwatch st = new Stopwatch();
             st.Start();
             RestAPIConfiguration restConf = new RestAPIConfiguration(builder.Configuration).CreateFileList().MakeChunksFiles();//.FillCache(RestCache);

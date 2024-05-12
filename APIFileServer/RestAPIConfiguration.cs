@@ -22,6 +22,7 @@ namespace APIFileServer
         public int MaxChunkSize { get; private set; } = 50 * 1024;
         public string PhysicalFileRoot { get; private set; } = string.Empty;
         public int MaxCacheRam { get; private set; } = 500*1024*1024;
+        public bool CompressedChunks { get; private set; } = false;
         public RestAPIConfiguration(ConfigurationManager config)
         {
             var sharedFileConf = config.GetSection("SharedFile");
@@ -55,6 +56,7 @@ namespace APIFileServer
 
             PhysicalFileRoot = sharedFileConf.GetValue<string>("PhysicalProvider") ?? string.Empty;
             ChunksMainFolder = sharedFileConf.GetValue<string>("ChunksMainFolder") ?? string.Empty;
+            CompressedChunks = sharedFileConf.GetValue<bool>("Compressed");
 
             if (ChunksMainFolder == string.Empty)
             {
@@ -99,7 +101,7 @@ namespace APIFileServer
         {
             //Task.Run(() =>
             //{
-            FileList?.MakeChunksFiles(ChunksMainFolder, MaxChunkSize);
+            FileList?.MakeChunksFiles(ChunksMainFolder, MaxChunkSize, CompressedChunks);
             //});
 
             return this;

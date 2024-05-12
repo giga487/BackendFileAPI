@@ -124,11 +124,13 @@ namespace RestClientDll
             return string.Format(address, filename, id);
         }
 
-        public async Task<DownloadResult> DownloadChunk(string apiChunks, string filenameToDownload, int index, string path = "")
+        public async Task<DownloadResult> DownloadChunk(string apiChunks, string filenameToDownload, int index, string path = "", bool isCompressed = false)
         {
             string requestString = DownloadChunkRequest(apiChunks, filenameToDownload, index);
             var request = new RestSharp.RestRequest(requestString, Method.Get);
-            var fileData = _client.DownloadData(request);
+            var downloadedData = _client.DownloadData(request);
+
+            byte[] fileData = downloadedData;
 
             Stopwatch st = new Stopwatch();
             FileInfo f = new FileInfo(filenameToDownload);
@@ -208,16 +210,15 @@ namespace RestClientDll
             return await Task.FromResult(default(FileInfo));
         }
 
-        public async Task<DownloadChunksResult> DownloadChunksByIndexes(string apiChunks, List<int> chunksIds, string filenameToDownload, string path = "", int maxTry = 5)
+        public async Task<DownloadChunksResult> DownloadChunksByIndexes(string apiChunks, List<int> chunksIds, string filenameToDownload, string path = "", int maxTry = 5, bool isCompressed = false)
         {
-            double percentage = 0;
             //string address = "/api/File/DownloadFileByChunks?fileName={0}&Id={1}";
             Dictionary<int, DownloadResult> ChunksResult = new Dictionary<int, DownloadResult>();
 
             List<int> chunksIdsCopy = chunksIds.ToList();
             foreach (var t in chunksIdsCopy.ToList())
             {
-                var downloadStatus = await DownloadChunk(apiChunks, filenameToDownload, t, path);
+                var downloadStatus = await DownloadChunk(apiChunks, filenameToDownload, t, path, isCompressed: isCompressed);
                 OnDownloadedFileResult(new ChunkDowloadArgs(t, downloadStatus));
 
                 if (downloadStatus.Result == Result.Ok)
@@ -231,7 +232,7 @@ namespace RestClientDll
         }
 
         public int TimeToTryAgain_MS => 50;
-        public async Task<DownloadChunksResult> DownloadChunks(string apiChunks, int chunkNumber, string filenameToDownload, string path = "", int maxTry = 5)
+        public async Task<DownloadChunksResult> DownloadChunks(string apiChunks, int chunkNumber, string filenameToDownload, string path = "", int maxTry = 5, bool isCompressed = false)
         {
             List<int> chunks = new List<int>();
 
@@ -240,33 +241,35 @@ namespace RestClientDll
                 chunks.Add(i);
             }
 
-            return await DownloadChunksByIndexes(apiChunks, chunks, filenameToDownload, path, maxTry);
+            return await DownloadChunksByIndexes(apiChunks, chunks, filenameToDownload, path, maxTry, isCompressed);
         }
 
-        public async Task<bool> GetFileByChunks(string apiChunks, int chunkNumber, string oldMd5, string filenameToDownload, string path = "", int maxTry = 5)
+        public async Task<bool> GetFileByChunks(string apiChunks, ApiFileInfo apifile, string filenameToDownload, string path = "", int maxTry = 5)
         {
-            var downloads = await DownloadChunks(apiChunks, chunkNumber, filenameToDownload, path, maxTry);
+            var downloads = await DownloadChunks(apiChunks, apifile.ChunksNumber, filenameToDownload, path, maxTry, apifile.IsCompressed);
 
             if (downloads.Result == Result.Ok)
             {
-                Dictionary<int, byte[]> chunks = new Dictionary<int, byte[]>();
 
                 int position = 0;
                 string newFileName = Path.Combine(path, filenameToDownload);
+                string finalFileName = Path.Combine(path, apifile.Filename);
 
                 try
                 {
+                    if (apifile.IsCompressed)
+                    {
+                        newFileName += "_compressed";
+                    }
+
                     using (var fileToCreate = new FileStream(newFileName, FileMode.OpenOrCreate, FileAccess.Write))
                     {
                         foreach (var downloadedChunk in downloads.Chunks.OrderBy(t => t.Index))
                         {
-                            chunks[downloadedChunk.Index] = new byte[255];
-                            //chunks
-
                             using (var fs = new FileStream(downloadedChunk.FileInfo.FullName, FileMode.Open, FileAccess.Read))
                             {
-                                byte[] bytes = new byte[downloadedChunk.FileInfo.Length];
-                                var bytesToAddAtPosition = fs.Read(bytes, 0, (int)downloadedChunk.FileInfo.Length);
+                                byte[] bytes = new byte[downloadedChunk.Size];
+                                var bytesToAddAtPosition = fs.Read(bytes, 0, (int)downloadedChunk.Size);
                                 fileToCreate.Write(bytes, 0, downloadedChunk.Size);
 
                                 position += bytesToAddAtPosition;
@@ -275,7 +278,12 @@ namespace RestClientDll
                         }
                     }
 
-                    if (FileHelper.Md5Result(newFileName) != oldMd5)
+                    if (apifile.IsCompressed)
+                    {
+                        FileHelper.DecompressFileToFile(newFileName, finalFileName);
+                    }
+
+                    if (FileHelper.Md5Result(finalFileName) != apifile.MD5)
                     {
                         return false;
                     }

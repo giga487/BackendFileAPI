@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
@@ -12,6 +13,9 @@ namespace Utils.FileHelper
         public long Dim { get; set; } = 0;
         public FileInfo FileInfo { get; private set; } = null;
         public FileHelper.ChunkFile Chunks { get; private set; } = null;
+        public bool IsCompressed { get; set; } = false;
+        public DateTime? ChunkCreationTime { get; set; } = null;
+        public long? ChunkCreationElapsedTime { get; set; } = null;
         public FileInfoToShare(string filename, string mainFolder)
         {
             string relativeName = FileHelper.RelativePath(filename, mainFolder);
@@ -19,17 +23,21 @@ namespace Utils.FileHelper
             FileInfo = new FileInfo(filename);
             Dim = FileInfo.Length;
             Filename = relativeName;
-
         }
 
-        public FileInfoToShare MakeChunksFiles(string chunkFolder, int maxSize)
+        public FileInfoToShare MakeChunksFiles(string chunkFolder, int maxSize, bool compressed)
         {
             //Task.Run(() =>
             //{
             Stopwatch st = new Stopwatch();
             st.Start();
-            Chunks = new FileHelper.ChunkFile(FileInfo.FullName, chunkFolder, maxSize);
+            Chunks = new FileHelper.ChunkFile(FileInfo.FullName, chunkFolder, maxSize, compressed);
+            IsCompressed = compressed;
+
+            ChunkCreationTime = DateTime.Now;
             st.Stop();
+
+            ChunkCreationElapsedTime = st.ElapsedMilliseconds;
             //});
 
             return this;
@@ -45,7 +53,6 @@ namespace Utils.FileHelper
         public FileInfoToShare Initialize()
         {
             MD5 = FileHelper.Md5Result(FileInfo.FullName);
-
             return this;
         }
     }
@@ -56,12 +63,14 @@ namespace Utils.FileHelper
         public string MD5 { get; set; } = string.Empty;
         public long Dim { get; set; } = 0;
         public int ChunksNumber { get; set; } = 0;
+        public bool IsCompressed { get; set; } = false;
         public ApiFileInfo() { }
         public ApiFileInfo(FileInfoToShare f)
         {
             Filename = f.Filename;
             MD5 = f.MD5;
             Dim = f.Dim;
+            IsCompressed = f.IsCompressed;
         }
 
         public ApiFileInfo(string filename, string mD5, long dim)
@@ -116,15 +125,16 @@ namespace Utils.FileHelper
             return this;
         }
 
-        public FileList MakeChunksFiles(string chunkFolder, int maxSize)
+        public FileList MakeChunksFiles(string chunkFolder, int maxSize, bool compressed = false)
         {
             foreach (var f in FilesDict)
             {
-                f.Value?.MakeChunksFiles(chunkFolder, maxSize);
+                f.Value?.MakeChunksFiles(chunkFolder, maxSize, compressed);
 
                 if (MinimalApiDict.TryGetValue(f.Key, out ApiFileInfo value)) //Aggiorno i minimal api 
                 {
                     value.ChunksNumber = f.Value.Chunks.ChunksList.Count;
+                    value.IsCompressed = compressed;
                 }
             }
 

@@ -180,7 +180,7 @@ namespace WpfClientRest
             st.Start();
 
             string address = "/api/File/DownloadFileByChunks?fileName={0}&Id={1}";
-            client.DownloadChunks(address, apiFileInfo.ChunksNumber, fileNameSelected, path: "Test");
+            await client.DownloadChunks(address, apiFileInfo.ChunksNumber, fileNameSelected, path: "Test");
 
             st.Stop();
             resultTxtBox.Text += $"Downloaded: {fileNameSelected} in {st.ElapsedMilliseconds}ms" + Environment.NewLine;
@@ -335,14 +335,14 @@ namespace WpfClientRest
             st.Start();
 
             string address = "/api/File/DownloadFileByChunks?fileName={0}&Id={1}";
-            var result = await client.GetFileByChunks(address, apiFileInfo.ChunksNumber, apiFileInfo.MD5, fileNameSelected, path: "Test");
+            if (await client.GetFileByChunks(address, apiFileInfo, fileNameSelected, path: "Test"))
+            {
+                st.Stop();
 
-            st.Stop();
+                resultTxtBox.Text += $"Downloaded: {apiFileInfo.Filename} in {st.ElapsedMilliseconds}ms, C: {apiFileInfo.IsCompressed}, " + Environment.NewLine;
+            }
 
-            //foreach( var chunk in result.Chunks)
-            //{
-            //    resultTxtBox.Text += $"Downloaded: {chunk.FileInfo.FullName} in {chunk.Milliseconds}ms {chunk.Size}, " + Environment.NewLine;
-            //}
+
         }
     }
 }
