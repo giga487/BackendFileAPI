@@ -112,26 +112,23 @@ namespace Utils.FileHelper
                                 //}
                             }
                         }
-                        //else
-                        //{
-                        //    string md5Old = Md5Result(newfile);
+                        else
+                        {
+                            string md5Old = Md5Result(newfile);
 
-                        //    if (md5Old != md5New)
-                        //    {
-                        //        using (Stream output = File.Create(newfile))
-                        //        {
-                        //            while (remaining > 0 && bytesRead > 0)
-                        //            {
-                        //                output.Write(buffer, 0, bytesRead);
-                        //                remaining -= bytesRead;
-                        //            }
-                        //        }
-                        //    }
-                        //    else
-                        //    {
-
-                        //    }
-                        //}
+                            if (md5Old != md5New)
+                            {
+                                using (Stream output = File.Create(newfile))
+                                {
+                                    output.Write(buffer, 0, sizeToCopy);
+                                    remaining -= sizeToCopy;
+                                }
+                            }
+                            else
+                            {
+                                remaining -= sizeToCopy;
+                            }
+                        }
 
                         arrayChunksIndex += sizeToCopy;
                         index++;
@@ -230,7 +227,7 @@ namespace Utils.FileHelper
                                 }
                                 else
                                 {
-
+                                    remaining -= bytesRead;
                                 }
                             }
 

@@ -23,6 +23,7 @@ namespace APIFileServer
         public string PhysicalFileRoot { get; private set; } = string.Empty;
         public int MaxCacheRam { get; private set; } = 500*1024*1024;
         public bool CompressedChunks { get; private set; } = false;
+        public bool JWTIsEnabled { get; private set; } = true;
         public RestAPIConfiguration(ConfigurationManager config)
         {
             var sharedFileConf = config.GetSection("SharedFile");
@@ -76,6 +77,7 @@ namespace APIFileServer
                 throw new ArgumentException(message: "No jwt token secure data");
 
             JWTConfig = new JWTSecureConfiguration();
+            JWTIsEnabled = jwtConfig.GetValue<bool>("IsEnabled");
 
             JWTConfig.MyKey = jwtConfig.GetValue<string>("MyKey") ?? string.Empty;
             JWTConfig.Issuer = jwtConfig.GetValue<string>("Issuer") ?? string.Empty;

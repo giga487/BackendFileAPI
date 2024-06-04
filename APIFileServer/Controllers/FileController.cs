@@ -1,4 +1,5 @@
 ﻿using APIFileServer.source;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.FileProviders;
@@ -25,6 +26,7 @@ namespace APIFileServer.Controllers
 
         //https://localhost:7006/api/File/List
         [HttpGet]
+        [Authorize]
         public IActionResult List()
         {
             if (_fileProvider is PhysicalFileProvider physicalFileProvider)
@@ -46,6 +48,7 @@ namespace APIFileServer.Controllers
         //http://localhost:5009/MD5?filename=test.txt
         //[HttpGet("[controller]/[action]/{filename}")]
         [HttpGet]
+        [Authorize]
         public async Task<IActionResult> MD5(string? filename)
         {
             string md5 = string.Empty;
@@ -68,6 +71,7 @@ namespace APIFileServer.Controllers
         }
 
         [HttpGet]
+        [Authorize]
         public async Task<IActionResult> CacheRemainingSize()
         {
             if (_memoryCache is not null)
@@ -79,6 +83,7 @@ namespace APIFileServer.Controllers
         }
 
         [HttpGet]
+        [Authorize]
         public async Task<IActionResult> CacheItems()
         {
             List<string> cacheItems = new List<string>();
@@ -92,6 +97,7 @@ namespace APIFileServer.Controllers
 
 
         [HttpGet]
+        [Authorize]
         public async Task<IActionResult> DownloadFileByChunks(string fileName, int id)
         {
             if (string.IsNullOrEmpty(fileName) || fileName == null || _files is null)
@@ -153,115 +159,6 @@ namespace APIFileServer.Controllers
                             return File(memoryBuffer, "application/octet-stream");
                         }
                     }
-
-
-
-                    //if (_memoryCache.Get(objToSend.Filename, out byte[] memoryBuffer))
-                    //{
-                    //    using (MemoryStream memoryStream = new MemoryStream(memoryBuffer))
-                    //    {
-                    //        if (memoryStream.Length == 0)
-                    //        {
-                    //            Console.WriteLine($"Request of {objToSend.Filename} -> failed");
-                    //        }
-
-                    //        if (new FileExtensionContentTypeProvider().TryGetContentType(objToSend.Filename, out string contentType))
-                    //        {
-                    //            // set the position to return the file from
-                    //            return File(memoryBuffer, contentType);
-                    //        }
-                    //        else
-                    //        {
-                    //            return File(memoryBuffer, "application/octet-stream");
-                    //        }
-                    //    }
-                    //}
-                    //else
-                    //{
-                    //    using (var stream = new FileStream(file.FileInfo.FullName, FileMode.Open))
-                    //    {
-                    //        using (MemoryStream memoryStream = new MemoryStream())
-                    //        {
-                    //            await stream.CopyToAsync(memoryStream);
-                    //            if (new FileExtensionContentTypeProvider().TryGetContentType(objToSend.Filename, out string contentType))
-                    //            {
-                    //                return File(memoryBuffer, contentType);
-                    //            }
-                    //            else
-                    //            {
-                    //                return File(memoryBuffer, "application/octet-stream");
-                    //            }
-
-                    //        }
-
-                    //    }
-
-                    //}
-
-
-                    //using (var stream = new FileStream(objToSend.Filename, FileMode.Open))
-                    //{
-                    //    memoryStream = new MemoryStream();
-                    //    await stream.CopyToAsync(memoryStream);
-                    //    _memoryCache.AddMemory(objToSend.Filename, memoryStream.GetBuffer());
-
-                    //    FileInfo f = new FileInfo(objToSend.Filename);
-
-                    //    var upload = FileStreamUpload(f.Name, memoryStream);
-                    //    return upload;
-                    //}
-
-                    /*
-                    if (objToSend != null)
-                    {
-                        if (!_memoryCache.Get(objToSend.Filename, out byte[] memoryBuffer))
-                        {
-                            using (var stream = new FileStream(objToSend.Filename, FileMode.Open))
-                            {
-                                memoryStream = new MemoryStream();
-                                await stream.CopyToAsync(memoryStream);
-                                _memoryCache.AddMemory(objToSend.Filename, memoryStream);
-                            }
-                        }
-                        else
-                        {
-                            memoryStream = new MemoryStream(memoryBuffer);
-                        }
-
-                        FileInfo f = new FileInfo(objToSend.Filename);
-
-                        using(memoryStream)
-                        {
-                            if (memoryStream.Length == 0)
-                            {
-                                Console.WriteLine($"Request of {objToSend.Filename} -> failed");
-                            }
-
-                            return FileStreamUpload(f.Name, memoryStream);
-                            //if (new FileExtensionContentTypeProvider().TryGetContentType(objToSend.Filename, out string contentType))
-                            //{
-                            //    // set the position to return the file from
-                            //    memoryStream.Position = 0;
-
-                            //    return new FileStreamResult(memoryStream, contentType)
-                            //    {
-                            //        FileDownloadName = objToSend.Filename
-                            //    };
-                            //}
-                            //else
-                            //{
-                            //    memoryStream.Position = 0;
-
-                            //    //Console.WriteLine($"Request of {objToSend.Filename}");
-                            //    return new FileStreamResult(memoryStream, "application/octet-stream")
-                            //    {
-                            //        FileDownloadName = objToSend.Filename
-                            //    };
-
-                            //}
-                        }
-                    }
-                    */
                 }
                 catch (Exception ex)
                 {
@@ -273,7 +170,7 @@ namespace APIFileServer.Controllers
             else
                 return new BadRequestResult();
         }
-
+        [Authorize]
         private FileStreamResult? FileStreamUpload(string filename, MemoryStream memoryStream)
         {
             try
@@ -309,6 +206,7 @@ namespace APIFileServer.Controllers
 
 
         [HttpGet]
+        [Authorize]
         public async Task<IActionResult> DownloadFile(string fileName)
         {
             if (string.IsNullOrEmpty(fileName) || fileName == null || _files is null)
@@ -338,30 +236,6 @@ namespace APIFileServer.Controllers
                 }
 
                 return FileStreamUpload(fileName, memoryStream);
-
-                //if (new FileExtensionContentTypeProvider().TryGetContentType(fileName, out string contentType))
-                //{
-                //    // set the position to return the file from
-                //    memoryStream.Position = 0;
-
-                //    return new FileStreamResult(memoryStream, contentType)
-                //    {
-                //        FileDownloadName = fileName
-                //    };
-                //}
-                //else
-                //{
-                //    memoryStream.Position = 0;
-
-                //    //Console.WriteLine($"Request of {objToSend.Filename}");
-                //    return new FileStreamResult(memoryStream, "application/octet-stream")
-                //    {
-                //        FileDownloadName = fileName
-                //    };
-
-                //}
-
-                //return new BadRequestResult();
             }
             else
                 return new BadRequestResult();

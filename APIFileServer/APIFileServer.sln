@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RestClientDll", "..\RestCli
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WpfClientRest", "..\WpfClientRest\WpfClientRest.csproj", "{1A355B40-3927-454C-89E1-183562C0B51A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NetCoreLogin", "..\NetCoreLogin\NetCoreLogin.csproj", "{2C6783BE-D050-4600-96B7-014DF478E14A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -53,6 +55,14 @@ Global
 		{1A355B40-3927-454C-89E1-183562C0B51A}.Release|Any CPU.Build.0 = Release|Any CPU
 		{1A355B40-3927-454C-89E1-183562C0B51A}.Release|x64.ActiveCfg = Release|x64
 		{1A355B40-3927-454C-89E1-183562C0B51A}.Release|x64.Build.0 = Release|x64
+		{2C6783BE-D050-4600-96B7-014DF478E14A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2C6783BE-D050-4600-96B7-014DF478E14A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2C6783BE-D050-4600-96B7-014DF478E14A}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{2C6783BE-D050-4600-96B7-014DF478E14A}.Debug|x64.Build.0 = Debug|Any CPU
+		{2C6783BE-D050-4600-96B7-014DF478E14A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2C6783BE-D050-4600-96B7-014DF478E14A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2C6783BE-D050-4600-96B7-014DF478E14A}.Release|x64.ActiveCfg = Release|Any CPU
+		{2C6783BE-D050-4600-96B7-014DF478E14A}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -48,19 +48,23 @@ namespace APIFileServer
             builder.Services.AddScoped<JwtUtils, JwtUtils>();
             builder.Services.AddDirectoryBrowser();
 
-            builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
+            if (restConf.JWTIsEnabled)
             {
-                options.RequireHttpsMetadata = false;
-                options.SaveToken = true;
-                options.TokenValidationParameters = new TokenValidationParameters()
+                builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
                 {
-                    ValidateIssuer = true,
-                    ValidateAudience = true,
-                    ValidAudience = Secure.Audience,
-                    ValidIssuer = Secure.Issuer,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Secure.MyKey))
-                };
-            });
+                    options.RequireHttpsMetadata = false;
+                    options.SaveToken = true;
+                    options.TokenValidationParameters = new TokenValidationParameters()
+                    {
+                        ValidateIssuer = true,
+                        ValidateAudience = true,
+                        ValidAudience = Secure.Audience,
+                        ValidIssuer = Secure.Issuer,
+                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Secure.MyKey))
+                    };
+                });
+            }
+
 
             // Add services to the container.
             builder.WebHost.UseKestrel(x => { x.Limits.MaxConcurrentConnections = 1000; });
