@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.FileProviders;
 using System.Runtime.InteropServices;
-using JWTAuthentication;
+//using JWTAuthentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -45,7 +45,7 @@ namespace APIFileServer
 
             builder.Services.AddSingleton(RestCache);
             builder.Services.AddSingleton(Secure);
-            builder.Services.AddScoped<JwtUtils, JwtUtils>();
+            //builder.Services.AddScoped<JwtUtils, JwtUtils>();
             builder.Services.AddDirectoryBrowser();
 
             if (restConf.JWTIsEnabled)
