@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -8,13 +9,20 @@ namespace Utils.FileHelper
 {
     public class FileInfoToShare
     {
+        [JsonProperty]
         public string Filename { get; set; } = string.Empty;
+        [JsonProperty]
         public string MD5 { get; set; } = string.Empty;
         public long Dim { get; set; } = 0;
+        [JsonIgnore]
         public FileInfo FileInfo { get; private set; } = null;
+        [JsonIgnore]
         public FileHelper.ChunkFile Chunks { get; private set; } = null;
+        [JsonIgnore]
         public bool IsCompressed { get; set; } = false;
+        [JsonIgnore]
         public DateTime? ChunkCreationTime { get; set; } = null;
+        [JsonIgnore]
         public long? ChunkCreationElapsedTime { get; set; } = null;
         public FileInfoToShare(string filename, string mainFolder)
         {
@@ -83,9 +91,11 @@ namespace Utils.FileHelper
 
     public class FileList
     {
+        [JsonProperty]
         public Dictionary<string, FileInfoToShare> FilesDict = new Dictionary<string, FileInfoToShare>();
-        public Dictionary<string, ApiFileInfo> MinimalApiDict = new Dictionary<string, ApiFileInfo>();
-
+        [JsonIgnore]
+        public Dictionary<string, ApiFileInfo> ChunkDictionary = new Dictionary<string, ApiFileInfo>();
+        [JsonIgnore]
         public string Folder = string.Empty;
         private string[] Files = null;
         public long TotalFileSize { get; private set; } = 0;
@@ -94,6 +104,18 @@ namespace Utils.FileHelper
             Folder = folderPath;
             Files = Directory.GetFiles(Folder, "*.*", SearchOption.AllDirectories);
 
+        }
+
+        public int GetAmountOfFile()
+        {
+            int amount = 0;
+
+            foreach (var file in ChunkDictionary)
+            {
+                amount += file.Value.ChunksNumber;
+            }
+
+            return amount;
         }
 
         public async Task<FileList> AddFilesAsync()
@@ -131,7 +153,7 @@ namespace Utils.FileHelper
             {
                 f.Value?.MakeChunksFiles(chunkFolder, maxSize, compressed);
 
-                if (MinimalApiDict.TryGetValue(f.Key, out ApiFileInfo value)) //Aggiorno i minimal api 
+                if (ChunkDictionary.TryGetValue(f.Key, out ApiFileInfo value)) //Aggiorno i minimal api 
                 {
                     value.ChunksNumber = f.Value.Chunks.ChunksList.Count;
                     value.IsCompressed = compressed;
@@ -149,9 +171,9 @@ namespace Utils.FileHelper
                 TotalFileSize += f.Dim;
             }
 
-            if (!MinimalApiDict.ContainsKey(name) && f != null)
+            if (!ChunkDictionary.ContainsKey(name) && f != null)
             {
-                MinimalApiDict[name] = new ApiFileInfo(f);
+                ChunkDictionary[name] = new ApiFileInfo(f);
                 TotalFileSize += f.Dim;
             }
         }

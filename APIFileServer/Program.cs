@@ -10,22 +10,35 @@ using Utils.JWTAuthentication;
 using Utils.FileHelper;
 using System.Diagnostics;
 using APIFileServer.source;
+using Serilog;
+using System.Reflection;
 
 namespace APIFileServer
 {
     public class Program
     {
         public static JWTSecureConfiguration? Secure { get; private set; } = null;
-
+        public static Serilog.ILogger Logger { get; private set; }
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
 
+            var sharedFileConf = builder.Configuration.GetValue<string>("LoggerPath");
+
+            string fileName = Path.Combine(sharedFileConf, $"{DateTime.Now}_Patcher.LOG");
+
+            Logger = new LoggerConfiguration()
+                .WriteTo.Console()
+                .WriteTo.File(fileName, Serilog.Events.LogEventLevel.Debug, outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
+                .CreateLogger();
+
+            Logger.Information($"Starting PATCHER software {Assembly.GetExecutingAssembly().GetName().Version}");
+
             Stopwatch st = new Stopwatch();
             st.Start();
-            RestAPIConfiguration restConf = new RestAPIConfiguration(builder.Configuration).CreateFileList().MakeChunksFiles();//.FillCache(RestCache);
+            RestAPIConfiguration restConf = new RestAPIConfiguration(builder.Configuration, Logger).CreateFileList().MakeChunksFiles();//.FillCache(RestCache);
             st.Stop();
-            Console.WriteLine($"Size list {restConf.FileList.TotalFileSize} bytes, {st.ElapsedMilliseconds}ms");
+            Logger.Information($"Size list {restConf.FileList.TotalFileSize} bytes, {st.ElapsedMilliseconds}ms");
 
             RestAPIFileCache RestCache = new RestAPIFileCache(restConf.MaxCacheRam);
 

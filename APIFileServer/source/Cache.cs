@@ -1,4 +1,6 @@
-﻿namespace APIFileServer.source
+﻿using Serilog.Core;
+
+namespace APIFileServer.source
 {
     public class RestAPIFileCache
     {
@@ -23,9 +25,10 @@
         private volatile Dictionary<string, MemoryItem> Memory = new Dictionary<string, MemoryItem>();
         public long MemorySize { get; private set; } = 0;
         public long MaxMemory { get; set; } = 1024*1024*1024;
-
-        public RestAPIFileCache(): this(1024*1024*1024)
+        Serilog.ILogger _logger { get; set; } 
+        public RestAPIFileCache(Serilog.ILogger logger): this(1024*1024*1024)
         {
+            _logger = logger;
         }
 
         public RestAPIFileCache(long MaxMemorySize)
@@ -94,9 +97,10 @@
             {
                 return false; // non posso eliminarla
             }
+
             MemorySize -= oldest.Value.MemoryDump.Length;
 
-            Console.WriteLine($"Removed from cache {oldest.Key}");
+            _logger.Information($"Removed from cache {oldest.Key}");
             Memory.Remove(oldest.Key);
 
             return true;

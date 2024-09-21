@@ -1,0 +1,205 @@
+{
+  "FilesDict": {
+    "anim.idx": {
+      "Filename": "anim.idx",
+      "MD5": "ca8a8f91043a6ad1aea3450d2438f14d",
+      "Dim": 1785720
+    },
+    "anim.mul": {
+      "Filename": "anim.mul",
+      "MD5": "b1efc293a9e55733e669faf145414bae",
+      "Dim": 194950053
+    },
+    "Anim1.def": {
+      "Filename": "Anim1.def",
+      "MD5": "6c3350fad292dad2c06694b6535a5e10",
+      "Dim": 92
+    },
+    "Anim2.def": {
+      "Filename": "Anim2.def",
+      "MD5": "cce852c231cb48b0db4f7a1054f9e470",
+      "Dim": 2779
+    },
+    "anim2.idx": {
+      "Filename": "anim2.idx",
+      "MD5": "497359bdd88bbd3aa71ed66f3fc5fbfd",
+      "Dim": 777000
+    },
+    "anim2.mul": {
+      "Filename": "anim2.mul",
+      "MD5": "c068f67af2348ee5349ab9f18ef4aed0",
+      "Dim": 211629038
+    },
+    "anim3.idx": {
+      "Filename": "anim3.idx",
+      "MD5": "d2d4c99e3865166bd6ad6c16684c9a07",
+      "Dim": 1558200
+    },
+    "anim3.mul": {
+      "Filename": "anim3.mul",
+      "MD5": "3a530c06adcd0ab79380b56e72cf34bf",
+      "Dim": 86938202
+    },
+    "anim4.idx": {
+      "Filename": "anim4.idx",
+      "MD5": "65070f94ccfd86049d1e9326335d38e5",
+      "Dim": 1016400
+    },
+    "anim4.mul": {
+      "Filename": "anim4.mul",
+      "MD5": "a4bc3b60d5525861cad986b6732864f6",
+      "Dim": 102667178
+    },
+    "anim5.idx": {
+      "Filename": "anim5.idx",
+      "MD5": "49df0e0cd8145554f1ec42cbce1c46eb",
+      "Dim": 951300
+    },
+    "anim5.mul": {
+      "Filename": "anim5.mul",
+      "MD5": "11d29014bd4d5c8003c7714a47fa2051",
+      "Dim": 99480023
+    },
+    "animdata.mul": {
+      "Filename": "animdata.mul",
+      "MD5": "53d83b17c2cba2687e871607dfbc987e",
+      "Dim": 4486748
+    },
+    "art.mul": {
+      "Filename": "art.mul",
+      "MD5": "e499d3fd89b1e1249aaa792a29259100",
+      "Dim": 135943424
+    },
+    "artidx.mul": {
+      "Filename": "artidx.mul",
+      "MD5": "961c76145433d3009c2a6d17207e1c92",
+      "Dim": 982608
+    },
+    "gumpart.mul": {
+      "Filename": "gumpart.mul",
+      "MD5": "a238cee94eb2b7f2ff31fad88ebc3732",
+      "Dim": 143527728
+    },
+    "gumpidx.mul": {
+      "Filename": "gumpidx.mul",
+      "MD5": "e6e08d3a8ee60ebf5737223ee71e15d4",
+      "Dim": 6291444
+    },
+    "hues.mul": {
+      "Filename": "hues.mul",
+      "MD5": "e6569be5d285a9c90d09c1b5b8fccc2c",
+      "Dim": 265500
+    },
+    "light.mul": {
+      "Filename": "light.mul",
+      "MD5": "9fb722f2bd83c3fcb722147b11b765b4",
+      "Dim": 2910700
+    },
+    "lightidx.mul": {
+      "Filename": "lightidx.mul",
+      "MD5": "bdd0f41f844b23809ae53e4a58afebde",
+      "Dim": 1200
+    },
+    "map0.mul": {
+      "Filename": "map0.mul",
+      "MD5": "7a5b588503e2b4fffe43a93a46601412",
+      "Dim": 77070336
+    },
+    "map0x.mul": {
+      "Filename": "map0x.mul",
+      "MD5": "e3009ad2417e9e0b821c509c1fbbff6b",
+      "Dim": 89915392
+    },
+    "map1.mul": {
+      "Filename": "map1.mul",
+      "MD5": "c26891632202a04be191299e3b8f99c2",
+      "Dim": 89915392
+    },
+    "map1x.mul": {
+      "Filename": "map1x.mul",
+      "MD5": "c26891632202a04be191299e3b8f99c2",
+      "Dim": 89915392
+    },
+    "map2.mul": {
+      "Filename": "map2.mul",
+      "MD5": "9fe79cc3c21405764019c63229a9b91c",
+      "Dim": 11289600
+    },
+    "map2x.mul": {
+      "Filename": "map2x.mul",
+      "MD5": "9fe79cc3c21405764019c63229a9b91c",
+      "Dim": 11289600
+    },
+    "map3.mul": {
+      "Filename": "map3.mul",
+      "MD5": "5982603119fd327ee8c4e54c08ccf75c",
+      "Dim": 16056320
+    },
+    "map4.mul": {
+      "Filename": "map4.mul",
+      "MD5": "2036353e9039dab6b7abff15faea95b0",
+      "Dim": 6421156
+    },
+    "map5.mul": {
+      "Filename": "map5.mul",
+      "MD5": "c07df303171c447a186de0dceebc9c8b",
+      "Dim": 16056320
+    },
+    "map5x.mul": {
+      "Filename": "map5x.mul",
+      "MD5": "c07df303171c447a186de0dceebc9c8b",
+      "Dim": 16056320
+    },
+    "Multi.idx": {
+      "Filename": "Multi.idx",
+      "MD5": "a7636dc05c3071c93c324a7fce5632c1",
+      "Dim": 98184
+    },
+    "Multi.mul": {
+      "Filename": "Multi.mul",
+      "MD5": "43c18b4c5d769a15a0cb0191d846ffb8",
+      "Dim": 962928
+    },
+    "radarcol.mul": {
+      "Filename": "radarcol.mul",
+      "MD5": "f883c72c2332632c11e9561d2d89fc68",
+      "Dim": 163768
+    },
+    "sound.mul": {
+      "Filename": "sound.mul",
+      "MD5": "296287395d2b6b1e99d67149264ecb89",
+      "Dim": 168307966
+    },
+    "soundidx.mul": {
+      "Filename": "soundidx.mul",
+      "MD5": "987f816f377c4cb5c5f90b76c224ceae",
+      "Dim": 6291444
+    },
+    "staidx0.mul": {
+      "Filename": "staidx0.mul",
+      "MD5": "9a3e5a44cea117944ade5f87aad676b4",
+      "Dim": 4718592
+    },
+    "statics0.mul": {
+      "Filename": "statics0.mul",
+      "MD5": "c0b314a2aa87c75d4ea8921d36022f4c",
+      "Dim": 5035877
+    },
+    "texidx.mul": {
+      "Filename": "texidx.mul",
+      "MD5": "775318ab82106706f4c46e85c0e91a38",
+      "Dim": 196608
+    },
+    "texmaps.mul": {
+      "Filename": "texmaps.mul",
+      "MD5": "3c501efc6b38cecfd3a36c7b867e7683",
+      "Dim": 27033600
+    },
+    "tiledata.mul": {
+      "Filename": "tiledata.mul",
+      "MD5": "0187f51c187d710d891d83e431cf5170",
+      "Dim": 3188736
+    }
+  },
+  "TotalFileSize": 3272297736
+}
