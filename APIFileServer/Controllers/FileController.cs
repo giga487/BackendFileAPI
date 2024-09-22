@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.FileProviders;
+using Serilog;
 using System;
 using System.IO;
 using System.Net.Mime;
@@ -15,13 +16,14 @@ namespace APIFileServer.Controllers
     {
         private IFileProvider? _fileProvider { get; set; } = null;
         private FileList? _files { get; set; } = null;
-        private RestAPIFileCache _memoryCache { get; set; } = null;
-
-        public FileController(IFileProvider? fileProvider, FileList list, RestAPIFileCache cache)
+        private RestAPIFileCache? _memoryCache { get; set; } = null;
+        private Serilog.ILogger? _logger { get; set; } = null;
+        public FileController(IFileProvider? fileProvider, FileList list, RestAPIFileCache cache, Serilog.ILogger logger)
         {
             _fileProvider = fileProvider;
             _files = list;
             _memoryCache = cache;
+            _logger = logger;
         }
 
         //https://localhost:7006/api/File/List
@@ -72,7 +74,7 @@ namespace APIFileServer.Controllers
 
         [HttpGet]
         [Authorize]
-        public async Task<IActionResult> CacheRemainingSize()
+        public IActionResult CacheRemainingSize()
         {
             if (_memoryCache is not null)
             {
@@ -84,7 +86,7 @@ namespace APIFileServer.Controllers
 
         [HttpGet]
         [Authorize]
-        public async Task<IActionResult> CacheItems()
+        public IActionResult CacheItems()
         {
             List<string> cacheItems = new List<string>();
             if (_memoryCache is not null)
@@ -98,7 +100,7 @@ namespace APIFileServer.Controllers
 
         [HttpGet]
         [Authorize]
-        public async Task<IActionResult> DownloadFileByChunks(string fileName, int id)
+        public IActionResult DownloadFileByChunks(string fileName, int id)
         {
             if (string.IsNullOrEmpty(fileName) || fileName == null || _files is null)
             {
@@ -122,6 +124,12 @@ namespace APIFileServer.Controllers
                 {
                     ApiFileInfo objToSend = file.Chunks.ChunksList.ElementAt(id);
 
+                    if (_memoryCache is null)
+                    {
+                        _logger?.Error("Memory cache initializer has failed");
+                        throw new Exception("Memory cache initializer has failed");
+                    }
+
                     if (!_memoryCache.Get(objToSend.Filename, out byte[]? memoryBuffer))
                     {
                         using (var stream = new FileStream(objToSend.Filename, FileMode.Open))
@@ -131,12 +139,12 @@ namespace APIFileServer.Controllers
                                 stream.CopyTo(memoryStream, (int)stream.Length);
                                 if (_memoryCache.AddMemory(objToSend.Filename, memoryStream.GetBuffer()))
                                 {
-                                    Console.WriteLine($"inserted in cache {objToSend.Filename}");
+                                    _logger?.Information($"inserted in cache {objToSend.Filename}");
                                     _memoryCache.Get(objToSend.Filename, out memoryBuffer);
                                 }
                                 else
                                 {
-                                    Console.WriteLine($"---- taken by hdd {objToSend.Filename}");
+                                    _logger?.Information($"---- taken by hdd {objToSend.Filename}");
                                     memoryBuffer = memoryStream.GetBuffer(); //if the data is not written in cache
                                 }
                             }
@@ -144,7 +152,7 @@ namespace APIFileServer.Controllers
                     }
                     else
                     {
-                        Console.WriteLine($"taken by cache {objToSend.Filename}");
+                        _logger?.Information($"taken by cache {objToSend.Filename}");
                         _memoryCache.Get(objToSend.Filename, out memoryBuffer);
                     }
 
@@ -162,6 +170,7 @@ namespace APIFileServer.Controllers
                 }
                 catch (Exception ex)
                 {
+                    _logger?.Warning($"File controller error: {ex.Message}");
                     return new BadRequestResult();
                 }
 
@@ -207,7 +216,7 @@ namespace APIFileServer.Controllers
 
         [HttpGet]
         [Authorize]
-        public async Task<IActionResult> DownloadFile(string fileName)
+        public async Task<IActionResult>? DownloadFile(string fileName)
         {
             if (string.IsNullOrEmpty(fileName) || fileName == null || _files is null)
             {

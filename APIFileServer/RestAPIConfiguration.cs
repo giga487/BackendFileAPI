@@ -22,7 +22,7 @@ namespace APIFileServer
         public List<string> SharedFiles { get; private set; } = new List<string>();
         public FileList? FileList { get; private set; } = null;
         public JWTSecureConfiguration? JWTConfig {get; private set;} = null;
-        public string ChunksMainFolder { get; private set; } = null;
+        public string ChunksMainFolder { get; private set; } = string.Empty;
         public bool ChunksIsOK { get; private set; } = true;
         public int MaxChunkSize { get; private set; } = 50 * 1024;
         public string PhysicalFileRoot { get; private set; } = string.Empty;
@@ -56,7 +56,7 @@ namespace APIFileServer
 
             try
             {
-                MD5File = sharedFileConf.GetValue<string>("MD5FileList");
+                MD5File = sharedFileConf.GetValue<string>("MD5FileList") ?? string.Empty;
             }
             catch
             {
@@ -153,7 +153,7 @@ namespace APIFileServer
                 FileList?.MakeChunksFiles(ChunksMainFolder, MaxChunkSize, CompressedChunks);
                 //});
 
-                int amountOfChunks = FileList.GetAmountOfFile();
+                int amountOfChunks = FileList?.GetAmountOfFile() ?? 0;
 
                 _logger?.Information($"CHUNK CREATED: {amountOfChunks}");
             }
@@ -165,7 +165,7 @@ namespace APIFileServer
             return this;
         }
 
-        public RestAPIConfiguration FillCache(RestAPIFileCache memoryCache)
+        public RestAPIConfiguration? FillCache(RestAPIFileCache memoryCache)
         {
             if(FileList == null)
             {
@@ -192,7 +192,7 @@ namespace APIFileServer
                             }
                             else
                             {
-                                _logger.Information($"{objToSend.Filename} has L: {(int)stream.Length}");
+                                _logger?.Information($"{objToSend.Filename} has L: {(int)stream.Length}");
                             }
                         }
                     }

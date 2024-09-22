@@ -174,8 +174,6 @@ namespace WpfClientRest
             string fileNameSelected = (string)fileCombobox.SelectedItem;
             var apiFileInfo = Dict[fileNameSelected];
 
-            double percentage = 0;
-
             Stopwatch st = new Stopwatch();
             st.Start();
 

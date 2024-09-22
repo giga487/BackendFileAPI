@@ -26,14 +26,15 @@ namespace APIFileServer.source
         public long MemorySize { get; private set; } = 0;
         public long MaxMemory { get; set; } = 1024*1024*1024;
         Serilog.ILogger _logger { get; set; } 
-        public RestAPIFileCache(Serilog.ILogger logger): this(1024*1024*1024)
+        public RestAPIFileCache(Serilog.ILogger logger): this(1024*1024*1024, logger)
         {
-            _logger = logger;
+
         }
 
-        public RestAPIFileCache(long MaxMemorySize)
+        public RestAPIFileCache(long MaxMemorySize, Serilog.ILogger logger)
         {
             MaxMemory = MaxMemorySize;
+            _logger = logger;
         }
         
         public void UpdateAccess(string key)
@@ -98,9 +99,10 @@ namespace APIFileServer.source
                 return false; // non posso eliminarla
             }
 
-            MemorySize -= oldest.Value.MemoryDump.Length;
 
-            _logger.Information($"Removed from cache {oldest.Key}");
+            MemorySize -= oldest.Value.MemoryDump?.Length ?? 0;
+
+            _logger?.Information($"Removed from cache {oldest.Key}");
             Memory.Remove(oldest.Key);
 
             return true;

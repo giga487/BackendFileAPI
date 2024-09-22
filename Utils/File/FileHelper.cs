@@ -37,7 +37,7 @@ namespace Utils.FileHelper
                 {
                     try
                     {
-                        compressor.Write(buffer, 0, buffer.Length);
+                        await compressor.WriteAsync(buffer, 0, buffer.Length);
                         //Console.WriteLine($"Original size{fileStream.Length} - {originalMemoryStream.GetBuffer().Length}");
 
                         return originalMemoryStream.GetBuffer();
@@ -91,15 +91,13 @@ namespace Utils.FileHelper
 
         public async static Task<byte[]> Decompress(byte[] compressedArray)
         {
-            byte[] result = null;
-
             MemoryStream decompressedMS = new MemoryStream();
 
             using (MemoryStream originalMemoryStream = new MemoryStream(compressedArray))
             {
                 using (GZipStream decompressionStream = new GZipStream(originalMemoryStream, CompressionMode.Decompress))
                 {
-                    decompressionStream.CopyTo(decompressedMS);
+                    await decompressionStream.CopyToAsync(decompressedMS);
                     byte[] bytysDecompressed = new byte[decompressedMS.Length];
 
                     Array.Copy(decompressedMS.GetBuffer(), bytysDecompressed, decompressedMS.Length);
